@@ -19,13 +19,16 @@ import com.mixer.api.services.impl.ChatService;
 import com.mixer.api.services.impl.UsersService;
 import javafx.application.Application;
 import javafx.application.Platform;
+import javafx.event.EventHandler;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
+import javafx.scene.control.ScrollPane;
 import javafx.scene.layout.Pane;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Text;
 import javafx.scene.text.TextFlow;
 import javafx.stage.Stage;
+import javafx.stage.WindowEvent;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -48,6 +51,7 @@ public class MixUI extends Application {
     private static String token = "";
     private static TextFlow chatBox;
     private static TextFlow userList;
+    private static ScrollPane chatScrollPane;
     private static MixerAPI mixer;
     private static List<MixChatUser> users = new LinkedList<MixChatUser>();
     private static MixerChatConnectable chatConnectable;
@@ -79,10 +83,20 @@ public class MixUI extends Application {
         // Display the Stage
         stage.show();
 
+        stage.setOnCloseRequest(new EventHandler<WindowEvent>() {
+            @Override
+            public void handle(WindowEvent t) {
+                Platform.exit();
+                System.exit(0);
+            }
+        });
+
         System.out.println("Setting chatBox");
         chatBox = (TextFlow) root.lookup("#ChatBox");
         userList = (TextFlow) root.lookup("#UserList");
+        chatScrollPane = (ScrollPane) root.lookup("#ChatScrollPane");
 
+        chatScrollPane.vvalueProperty().bind(chatBox.heightProperty());
 
         // testNode.setText("Hard coded text");
 

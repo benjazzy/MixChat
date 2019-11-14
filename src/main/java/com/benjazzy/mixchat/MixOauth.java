@@ -22,7 +22,8 @@ import com.google.api.client.util.store.FileDataStoreFactory;
 public class MixOauth {
 	// private static final File DATA_STORE_DIR = new
 	// File(System.getProperty("user.home"), ".store/dailymotion_sample");
-	private static final File DATA_STORE_DIR = new File("/home/benjazzy/.store/dailymotion_sample");
+	//private static final File DATA_STORE_DIR = new File("/home/benjazzy/.store/dailymotion_sample");
+	private static final File DATA_STORE_DIR = new File(System.getProperty("user.home") + File.separator + ".store" + File.separator + "mixchat");
 
 	/**
 	 * Global instance of the {@link DataStoreFactory}. The best practice is to make
