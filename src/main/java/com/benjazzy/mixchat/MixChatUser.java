@@ -1,0 +1,45 @@
+package com.benjazzy.mixchat;
+
+import com.mixer.api.resource.MixerUser;
+
+import java.util.List;
+
+public class MixChatUser {
+    private int id;
+    private String userName;
+    private List<MixerUser.Role> roleList;
+
+    MixChatUser(int id, String userName, List<MixerUser.Role> roleList) {
+        this.id = id;
+        this.userName = userName;
+        this.roleList = roleList;
+    }
+
+    public MixerUser.Role getPrimaryRole() {
+        if (this.roleList.contains(MixerUser.Role.OWNER)) {
+            return MixerUser.Role.OWNER;
+        }
+        else if (this.roleList.contains(MixerUser.Role.FOUNDER)) {
+            return MixerUser.Role.FOUNDER;
+        }
+        else if (this.roleList.contains(MixerUser.Role.STAFF)) {
+            return MixerUser.Role.STAFF;
+        }
+        else if (this.roleList.contains(MixerUser.Role.GLOBAL_MOD)) {
+            return MixerUser.Role.GLOBAL_MOD;
+        }
+        else if (this.roleList.contains(MixerUser.Role.PRO)) {
+            return MixerUser.Role.PRO;
+        }
+        else if (this.roleList.contains(MixerUser.Role.MOD)) {
+            return MixerUser.Role.MOD;
+        }
+        else {
+            return MixerUser.Role.USER;
+        }
+    }
+
+    public int getId() {return this.id;}
+    public String getUserName() {return this.userName;}
+    public List<MixerUser.Role> getRoleList() {return this.roleList;}
+}
