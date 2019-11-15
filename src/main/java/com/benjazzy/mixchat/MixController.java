@@ -69,7 +69,7 @@ public class MixController {
         if (channelName != null) {
 
             try {
-                MixUI.connect(channelName);
+                MixUI.getInstance().chat.connect(channelName);
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -82,10 +82,10 @@ public class MixController {
     @FXML
     private void SendMessage(ActionEvent event) {
         String m = message.getText();
-        if (MixUI.isConnected()) {
+        if (MixUI.getInstance().chat.isConnected()) {
 
             message.setText("");
-            MixUI.sendMessage(m);
+            MixUI.getInstance().chat.sendMessage(m);
         } else {
             System.out.println("Error not connected");
         }
@@ -95,10 +95,10 @@ public class MixController {
     private void handleMessageEnter(KeyEvent event) {
         if (event.getCode() == KeyCode.ENTER) {
             String m = message.getText();
-            if (MixUI.isConnected()) {
+            if (MixUI.getInstance().chat.isConnected()) {
 
                 message.setText("");
-                MixUI.sendMessage(m);
+                MixUI.getInstance().chat.sendMessage(m);
             } else {
                 System.out.println("Error not connected");
             }
