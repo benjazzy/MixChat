@@ -113,18 +113,21 @@ public class MixUI extends Application {
     public static List<Text> formatChatBox(IncomingMessageEvent event) {
         List<Text> textList = new ArrayList<Text>();
         Text username = new Text(event.data.userName);
-        Text message = new Text();
+        List<Text> message = new LinkedList<Text>();
         SimpleDateFormat formatter = new SimpleDateFormat("HH:mm:ss");
         Date date = new Date();
         Text dateText = new Text(formatter.format(date));
 
         // Iterate through message elements and add them to the message text
         for (MessageTextComponent i : event.data.message.message) {
-            String format = "";
-            if (i.text.contains("\u0040")) {
-                format = ConsoleColors.BLUE_UNDERLINED;
+            Text m = new Text(i.text);
+            //message.setText(String.format("%s%s", message.getText(), i.text));
+            if (m.getText().contains("\u0040")) {
+                m.setFill(Color.BLUE);
+                m.setUnderline(true);
             }
-            message.setText(String.format("%s%s%s", format, message.getText(), i.text));
+            message.add(m);
+
         }
 
         // Add color to username by user role
@@ -147,7 +150,9 @@ public class MixUI extends Application {
 
         textList.add(dateText);
         textList.add(username);
-        textList.add(message);
+        for (Text m : message) {
+            textList.add(m);
+        }
 
         return textList;
     }
