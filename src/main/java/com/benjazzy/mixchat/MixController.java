@@ -37,11 +37,12 @@ public class MixController {
         try {
             FXMLLoader loader = new FXMLLoader();
             // Path to the FXML File
-            String fxmlDocPath = "src/main/java/com/benjazzy/mixchat/ConnectWindow.fxml";
-            FileInputStream fxmlStream = new FileInputStream(fxmlDocPath);
+            //String fxmlDocPath = "src/main/java/com/benjazzy/mixchat/ConnectWindow.fxml";
+            loader.setLocation(getClass().getResource("/ConnectWindow.fxml"));
+            //FileInputStream fxmlStream = new FileInputStream(fxmlDocPath);
 
             // Create the Pane and all Details
-            root = loader.load(fxmlStream);
+            root = loader.load();
             Stage stage = new Stage();
             stage.setTitle("Connect");
             stage.setScene(new Scene(root));

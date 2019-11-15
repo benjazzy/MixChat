@@ -84,11 +84,12 @@ public class MixUI extends Application {
         // Create the FXMLLoader
         FXMLLoader loader = new FXMLLoader();
         // Path to the FXML File
-        String fxmlDocPath = "src/main/java/com/benjazzy/mixchat/MixChat.fxml";
-        FileInputStream fxmlStream = new FileInputStream(fxmlDocPath);
+        //String fxmlDocPath = "src/main/java/com/benjazzy/mixchat/MixChat.fxml";
+        loader.setLocation(getClass().getResource("/MixChat.fxml"));
+        //FileInputStream fxmlStream = new FileInputStream(fxmlDocPath);
 
         // Create the Pane and all Details
-        Pane root = loader.load(fxmlStream);
+        Pane root = loader.load();
 
         // Create the Scene
         Scene scene = new Scene(root);
