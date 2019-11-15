@@ -1,10 +1,7 @@
 /target/
 /.settings/
 /.store/
-/.attach_pid11952
-/.attach_pid12154
-/.attach_pid12569
-/.attach_pid12804
+/.attach_pid*
 /.classpath
 /.project
 /Test.jar

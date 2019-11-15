@@ -10,7 +10,6 @@ import com.google.api.client.auth.oauth2.ClientParametersAuthentication;
 import com.google.api.client.auth.oauth2.Credential;
 import com.google.api.client.extensions.java6.auth.oauth2.AuthorizationCodeInstalledApp;
 import com.google.api.client.extensions.jetty.auth.oauth2.LocalServerReceiver;
-import com.google.api.client.googleapis.auth.oauth2.GoogleAuthorizationCodeFlow;
 import com.google.api.client.http.GenericUrl;
 import com.google.api.client.http.HttpRequestFactory;
 import com.google.api.client.http.HttpResponse;
@@ -19,7 +18,6 @@ import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.api.client.json.JsonFactory;
 import com.google.api.client.json.jackson2.JacksonFactory;
 import com.google.api.client.util.store.FileDataStoreFactory;
-import com.google.api.services.oauth2.Oauth2;
 
 public class MixOauth {
 	// private static final File DATA_STORE_DIR = new
@@ -58,6 +56,12 @@ public class MixOauth {
 	}
 
 	public String getAccessToken() {
+		//System.out.println(credential.getExpiresInSeconds());
+		try {
+			credential.refreshToken();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 		return credential.getAccessToken();
 	}
 

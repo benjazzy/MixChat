@@ -16,7 +16,6 @@ import com.mixer.api.resource.chat.events.data.MessageComponent.MessageTextCompo
 import com.mixer.api.resource.chat.methods.AuthenticateMessage;
 import com.mixer.api.resource.chat.methods.ChatSendMethod;
 import com.mixer.api.resource.chat.replies.AuthenticationReply;
-import com.mixer.api.resource.chat.replies.ChatHistoryReply;
 import com.mixer.api.resource.chat.replies.ReplyHandler;
 import com.mixer.api.resource.chat.ws.MixerChatConnectable;
 import com.mixer.api.response.channels.ShowChannelsResponse;
@@ -70,12 +69,97 @@ public class MixChat {
         chatScrollPane.vvalueProperty().bind(chatBox.heightProperty());
     }
 
-    private void updateText(List<Text> text) {
-        for (Text t : text) {
-            chatBox.getChildren().add(t);
-        }
-        chatBox.getChildren().add(new Text(System.lineSeparator()));
+    public void connect(String chatName) throws InterruptedException, ExecutionException {
+        System.out.println(chatName);
+        token = "";
+        MixOauth oauth = new MixOauth();
+        //System.out.println(oauth.getAccessToken());
+        token = oauth.getAccessToken();
 
+        mixer = new MixerAPI("3721d6b1332a6db44a22ab5b71ae8e34ae187ee995b38f1a", token);
+        //final MixerUser[] user = {mixer.use(UsersService.class).getCurrent().get()};
+        int id = 0;
+
+        String result = null;
+        try {
+            result = getHTML(String.format("https://mixer.com/api/v1/channels/%s?fields=id", chatName));
+            JSONObject obj = new JSONObject(result);
+            id = obj.getInt("id");
+            chatId = id;
+            //System.out.println(id);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+
+        //System.out.println(user[0].channel.id);
+
+		/*Futures.addCallback(mixer.use(UsersService.class).search(chatName), new ResponseHandler<UserSearchResponse>() {
+			// Set up a handler for the response
+			@Override public void onSuccess(UserSearchResponse response) {
+				for (MixerUser u : response) {
+					System.out.println(u.username);
+					if (u.username.equals(chatName)) {
+					    System.out.println(String.format("found %s", u.username));
+					    id[0] = u.channel.id;
+                    }
+				}
+			}
+		});*/
+
+        MixerUser user = mixer.use(UsersService.class).getCurrent().get();
+        MixerChat chat = mixer.use(ChatService.class).findOne(id).get();
+        MixerChannel channel = mixer.use(ChannelsService.class).findOneByToken(chatName).get();
+
+        int rank = 0;
+
+        ShowChannelsResponse channels = getChannelsPage(0, mixer);
+        //System.out.println(channels.size());
+
+        //run(0, 0, 1, mixer);
+
+        chatConnectable = chat.connectable(mixer);
+
+        if (chatConnectable.connect()) {
+
+            chatConnectable.send(AuthenticateMessage.from(channel, user, chat.authkey),
+                    new ReplyHandler<AuthenticationReply>() {
+                        public void onSuccess(AuthenticationReply reply) {
+                            //chatConnectable.send(ChatSendMethod.of("Hello World!"));
+                            //sendMessage("Hello World!");
+                            System.out.println("Connected");
+                            connected = true;
+                        }
+
+                        public void onFailure(Throwable var1) {
+                            var1.printStackTrace();
+                        }
+                    });
+
+            /*chatConnectable.send(AuthenticateMessage.from(channel, user, chat.authkey),
+                    new ReplyHandler<ChatHistoryReply>() {
+                        public void onSuccess(ChatHistoryReply reply) {
+                            //chatConnectable.send(ChatSendMethod.of("Hello World!"));
+                            //sendMessage("Hello World!");
+                            //System.out.println(reply.messages);
+                        }
+
+                        public void onFailure(Throwable var1) {
+                            var1.printStackTrace();
+                        }
+                    });*/
+            updateUsers(chatId);
+        } else {
+            System.out.println("Failed to connect");
+        }
+        registerIncommingChat();
+    }
+
+    public void disconnect() {
+        if (isConnected()) {
+            chatConnectable.disconnect();
+            connected = false;
+        }
     }
 
     public List<Text> formatChatBox(IncomingMessageEvent event) {
@@ -162,107 +246,6 @@ public class MixChat {
 
     }
 
-
-    public void connect(String chatName) throws InterruptedException, ExecutionException, IOException {
-        System.out.println(chatName);
-        token = "";
-        MixOauth oauth = new MixOauth();
-        //System.out.println(oauth.getAccessToken());
-        token = oauth.getAccessToken();
-
-        mixer = new MixerAPI("3721d6b1332a6db44a22ab5b71ae8e34ae187ee995b38f1a", token);
-        //final MixerUser[] user = {mixer.use(UsersService.class).getCurrent().get()};
-        int id = 0;
-
-        String result = null;
-        try {
-            result = getHTML(String.format("https://mixer.com/api/v1/channels/%s?fields=id", chatName));
-            JSONObject obj = new JSONObject(result);
-            id = obj.getInt("id");
-            chatId = id;
-            //System.out.println(id);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-
-
-        //System.out.println(user[0].channel.id);
-
-		/*Futures.addCallback(mixer.use(UsersService.class).search(chatName), new ResponseHandler<UserSearchResponse>() {
-			// Set up a handler for the response
-			@Override public void onSuccess(UserSearchResponse response) {
-				for (MixerUser u : response) {
-					System.out.println(u.username);
-					if (u.username.equals(chatName)) {
-					    System.out.println(String.format("found %s", u.username));
-					    id[0] = u.channel.id;
-                    }
-				}
-			}
-		});*/
-
-        MixerUser user = mixer.use(UsersService.class).getCurrent().get();
-        MixerChat chat = mixer.use(ChatService.class).findOne(id).get();
-        MixerChannel channel = mixer.use(ChannelsService.class).findOneByToken(chatName).get();
-
-        int rank = 0;
-
-        ShowChannelsResponse channels = getChannelsPage(0, mixer);
-        //System.out.println(channels.size());
-
-        //run(0, 0, 1, mixer);
-
-        chatConnectable = chat.connectable(mixer);
-
-        if (chatConnectable.connect()) {
-
-            chatConnectable.send(AuthenticateMessage.from(channel, user, chat.authkey),
-                    new ReplyHandler<AuthenticationReply>() {
-                        public void onSuccess(AuthenticationReply reply) {
-                            //chatConnectable.send(ChatSendMethod.of("Hello World!"));
-                            //sendMessage("Hello World!");
-                            System.out.println("Connected");
-                            connected = true;
-                        }
-
-                        public void onFailure(Throwable var1) {
-                            var1.printStackTrace();
-                        }
-                    });
-
-            /*chatConnectable.send(AuthenticateMessage.from(channel, user, chat.authkey),
-                    new ReplyHandler<ChatHistoryReply>() {
-                        public void onSuccess(ChatHistoryReply reply) {
-                            //chatConnectable.send(ChatSendMethod.of("Hello World!"));
-                            //sendMessage("Hello World!");
-                            //System.out.println(reply.messages);
-                        }
-
-                        public void onFailure(Throwable var1) {
-                            var1.printStackTrace();
-                        }
-                    });*/
-            updateUsers(chatId);
-        } else {
-            System.out.println("Failed to connect");
-        }
-        registerIncommingChat();
-    }
-
-    public String getHTML(String urlToRead) throws Exception {
-        StringBuilder result = new StringBuilder();
-        URL url = new URL(urlToRead);
-        HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-        conn.setRequestMethod("GET");
-        BufferedReader rd = new BufferedReader(new InputStreamReader(conn.getInputStream()));
-        String line;
-        while ((line = rd.readLine()) != null) {
-            result.append(line);
-        }
-        rd.close();
-        return result.toString();
-    }
-
     public int run(int page, int viewers, int rank, MixerAPI mixer) throws ExecutionException, InterruptedException {
         ShowChannelsResponse channels = getChannelsPage(page, mixer);
         for (int i = 0; i < channels.size(); i++) {
@@ -305,11 +288,19 @@ public class MixChat {
                 updateUsers(chatId);
             });
         });
-        chatConnectable.on(UserLeaveEvent.class, jEvent -> {
+        chatConnectable.on(UserLeaveEvent.class, lEvent -> {
             Platform.runLater(() -> {
                 updateUsers(chatId);
             });
         });
+    }
+
+    private void updateText(List<Text> text) {
+        for (Text t : text) {
+            chatBox.getChildren().add(t);
+        }
+        chatBox.getChildren().add(new Text(System.lineSeparator()));
+
     }
 
     public void updateUserList() {
@@ -464,6 +455,20 @@ public class MixChat {
         users.add(user);
 
         updateUserList();
+    }
+
+    public String getHTML(String urlToRead) throws Exception {
+        StringBuilder result = new StringBuilder();
+        URL url = new URL(urlToRead);
+        HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+        conn.setRequestMethod("GET");
+        BufferedReader rd = new BufferedReader(new InputStreamReader(conn.getInputStream()));
+        String line;
+        while ((line = rd.readLine()) != null) {
+            result.append(line);
+        }
+        rd.close();
+        return result.toString();
     }
 
 	public void setToken(String t) {

@@ -69,15 +69,17 @@ public class MixController {
         String channelName = connectWindowField.getText();
         if (channelName != null) {
 
-            try {
-                MixUI.getInstance().chat.connect(channelName);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
+
+            MixUI.getInstance().chat.connect(channelName);
 
             Stage stage = (Stage) connectWindowDone.getScene().getWindow();
             stage.close();
         }
+    }
+
+    @FXML
+    private void Disconnect(ActionEvent event) {
+        MixUI.getInstance().chat.disconnect();
     }
 
     @FXML
