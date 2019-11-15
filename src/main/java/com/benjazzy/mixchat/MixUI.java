@@ -85,6 +85,7 @@ public class MixUI extends Application {
         FXMLLoader loader = new FXMLLoader();
         // Path to the FXML File
         //String fxmlDocPath = "src/main/java/com/benjazzy/mixchat/MixChat.fxml";
+        System.out.println(loader.getResources());
         loader.setLocation(getClass().getResource("/MixChat.fxml"));
         //FileInputStream fxmlStream = new FileInputStream(fxmlDocPath);
 

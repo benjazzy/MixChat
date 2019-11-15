@@ -10,6 +10,7 @@ import com.google.api.client.auth.oauth2.ClientParametersAuthentication;
 import com.google.api.client.auth.oauth2.Credential;
 import com.google.api.client.extensions.java6.auth.oauth2.AuthorizationCodeInstalledApp;
 import com.google.api.client.extensions.jetty.auth.oauth2.LocalServerReceiver;
+import com.google.api.client.googleapis.auth.oauth2.GoogleAuthorizationCodeFlow;
 import com.google.api.client.http.GenericUrl;
 import com.google.api.client.http.HttpRequestFactory;
 import com.google.api.client.http.HttpResponse;
@@ -18,6 +19,7 @@ import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.api.client.json.JsonFactory;
 import com.google.api.client.json.jackson2.JacksonFactory;
 import com.google.api.client.util.store.FileDataStoreFactory;
+import com.google.api.services.oauth2.Oauth2;
 
 public class MixOauth {
 	// private static final File DATA_STORE_DIR = new
@@ -26,7 +28,7 @@ public class MixOauth {
 	private static final File DATA_STORE_DIR = new File(System.getProperty("user.home") + File.separator + ".store" + File.separator + "mixchat");
 
 	/**
-	 * Global instance of the {@link DataStoreFactory}. The best practice is to make
+	 * Global instance of the {@link }. The best practice is to make
 	 * it a single globally shared instance across your application.
 	 */
 	private static FileDataStoreFactory DATA_STORE_FACTORY;
@@ -77,7 +79,7 @@ public class MixOauth {
 				OAuth2ClientCredentials.API_KEY, AUTHORIZATION_SERVER_URL).setScopes(Arrays.asList(SCOPE))
 						.setDataStoreFactory(DATA_STORE_FACTORY).build();
 		// authorize
-
+		//GoogleAuthorizationCodeFlow gFlow = new GoogleAuthorizationCodeFlow.Builder(HTTP_TRANSPORT, JSON_FACTORY, OAuth2ClientCredentials.API_KEY, OAuth2ClientCredentials.API_SECRET, Arrays.asList(SCOPE)).setAccessType("offline").build();
 		LocalServerReceiver receiver = new LocalServerReceiver.Builder().setHost(OAuth2ClientCredentials.DOMAIN)
 				.setPort(OAuth2ClientCredentials.PORT).build();
 		return new AuthorizationCodeInstalledApp(flow, receiver).authorize("user");
