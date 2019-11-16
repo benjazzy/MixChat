@@ -4,18 +4,23 @@ package com.benjazzy.mixchat;
  * Hello world!
  */
 
+import com.google.api.services.oauth2.Oauth2;
 import com.mixer.api.MixerAPI;
 import com.mixer.api.http.SortOrderMap;
 import com.mixer.api.resource.MixerUser;
 import com.mixer.api.resource.channel.MixerChannel;
+import com.mixer.api.resource.chat.AbstractChatReply;
 import com.mixer.api.resource.chat.MixerChat;
 import com.mixer.api.resource.chat.events.IncomingMessageEvent;
 import com.mixer.api.resource.chat.events.UserJoinEvent;
 import com.mixer.api.resource.chat.events.UserLeaveEvent;
+import com.mixer.api.resource.chat.events.data.IncomingMessageData;
 import com.mixer.api.resource.chat.events.data.MessageComponent.MessageTextComponent;
 import com.mixer.api.resource.chat.methods.AuthenticateMessage;
 import com.mixer.api.resource.chat.methods.ChatSendMethod;
+import com.mixer.api.resource.chat.methods.GetHistoryMethod;
 import com.mixer.api.resource.chat.replies.AuthenticationReply;
+import com.mixer.api.resource.chat.replies.ChatHistoryReply;
 import com.mixer.api.resource.chat.replies.ReplyHandler;
 import com.mixer.api.resource.chat.ws.MixerChatConnectable;
 import com.mixer.api.response.channels.ShowChannelsResponse;
@@ -23,7 +28,9 @@ import com.mixer.api.services.impl.ChannelsService;
 import com.mixer.api.services.impl.ChatService;
 import com.mixer.api.services.impl.UsersService;
 import javafx.application.Platform;
+import javafx.geometry.Orientation;
 import javafx.scene.control.ScrollPane;
+import javafx.scene.control.Separator;
 import javafx.scene.layout.Pane;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Text;
@@ -31,6 +38,7 @@ import javafx.scene.text.TextFlow;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
+import javax.annotation.Nullable;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -71,6 +79,16 @@ public class MixChat {
 
     public void connect(String chatName) throws InterruptedException, ExecutionException {
         System.out.println(chatName);
+        chatBox.getChildren().clear();
+        /*if (!chatBox.getChildren().isEmpty()) {
+            // Separator
+            final Separator separator = new Separator(Orientation.HORIZONTAL);
+            separator.prefWidthProperty().bind(chatBox.widthProperty());
+            separator.setStyle("-fx-background-color: red;");
+            chatBox.getChildren().add(separator);
+
+            chatBox.getChildren().add(new Text(System.lineSeparator()));
+        }*/
         token = "";
         MixOauth oauth = new MixOauth();
         //System.out.println(oauth.getAccessToken());
@@ -129,6 +147,16 @@ public class MixChat {
                             //sendMessage("Hello World!");
                             System.out.println("Connected");
                             connected = true;
+
+                            chatConnectable.send(GetHistoryMethod.forCount(50), new ReplyHandler<ChatHistoryReply>() {
+                                @Override
+                                public void onSuccess(@Nullable ChatHistoryReply result) {
+                                    Platform.runLater(() -> {
+                                        updateText(formatChatBox(result));
+                                    });
+                                    System.out.println(formatTerminalChat(result));
+                                }
+                            });
                         }
 
                         public void onFailure(Throwable var1) {
@@ -148,10 +176,13 @@ public class MixChat {
                             var1.printStackTrace();
                         }
                     });*/
-            updateUsers(chatId);
+            Platform.runLater(() -> {updateUsers(chatId);});
         } else {
             System.out.println("Failed to connect");
         }
+
+
+
         registerIncommingChat();
     }
 
@@ -207,6 +238,98 @@ public class MixChat {
         }
 
         return textList;
+    }
+
+    public List<Text> formatChatBox(ChatHistoryReply event) {
+        List<Text> textList = new ArrayList<Text>();
+
+        for (IncomingMessageData messageEvent : event.messages) {
+            textList.add(new Text(System.lineSeparator()));
+            Text username = new Text(messageEvent.userName);
+            List<Text> message = new LinkedList<Text>();
+            SimpleDateFormat formatter = new SimpleDateFormat("HH:mm:ss");
+            Date date = new Date();
+            Text dateText = new Text(formatter.format(date));
+
+            // Iterate through message elements and add them to the message text
+            for (MessageTextComponent i : messageEvent.message.message) {
+                Text m = new Text(i.text);
+                //message.setText(String.format("%s%s", message.getText(), i.text));
+                if (m.getText().contains("\u0040")) {
+                    m.setFill(Color.BLUE);
+                    m.setUnderline(true);
+                }
+                message.add(m);
+
+            }
+
+            // Add color to username by user role
+            if (messageEvent.userRoles.contains(MixerUser.Role.MOD)) {
+                username.setFill(Color.GREEN);
+            } else if (messageEvent.userRoles.contains(MixerUser.Role.PRO)) {
+                username.setFill(Color.DEEPPINK);
+            } else if (messageEvent.userRoles.contains(MixerUser.Role.USER)) {
+                username.setFill(Color.SKYBLUE);
+            } else if (messageEvent.userRoles.contains(MixerUser.Role.OWNER)) {
+            } else if (messageEvent.userRoles.contains(MixerUser.Role.FOUNDER)) {
+                username.setFill(Color.RED);
+            } else if (messageEvent.userRoles.contains(MixerUser.Role.STAFF)) {
+                username.setFill(Color.YELLOW);
+            } else if (messageEvent.userRoles.contains(MixerUser.Role.GLOBAL_MOD)) {
+                username.setFill(Color.TEAL);
+            }
+
+            username.setText(String.format(" %s: ", username.getText()));
+
+            textList.add(dateText);
+            textList.add(username);
+            for (Text m : message) {
+                textList.add(m);
+            }
+        }
+        return textList;
+    }
+
+    public String formatTerminalChat(ChatHistoryReply event) {
+        String r = "";
+        for (IncomingMessageData m : event.messages) {
+            String username = m.userName;
+            String usernameFormat = "";
+            String message = "";
+            SimpleDateFormat formatter = new SimpleDateFormat("HH:mm:ss");
+            Date date = new Date();
+
+
+            if (m.userRoles.contains(MixerUser.Role.MOD)) {
+                usernameFormat = ConsoleColors.GREEN_BOLD_BRIGHT;
+            } else if (m.userRoles.contains(MixerUser.Role.PRO)) {
+                usernameFormat = ConsoleColors.PURPLE_BOLD_BRIGHT;
+            } else if (m.userRoles.contains(MixerUser.Role.USER)) {
+                usernameFormat = ConsoleColors.CYAN_BOLD_BRIGHT;
+            } else if (m.userRoles.contains(MixerUser.Role.OWNER)) {
+                usernameFormat = ConsoleColors.WHITE_BOLD_BRIGHT;
+            } else if (m.userRoles.contains(MixerUser.Role.FOUNDER)) {
+                usernameFormat = ConsoleColors.RED_BOLD_BRIGHT;
+            } else if (m.userRoles.contains(MixerUser.Role.STAFF)) {
+                usernameFormat = ConsoleColors.YELLOW_BOLD_BRIGHT;
+            } else if (m.userRoles.contains(MixerUser.Role.GLOBAL_MOD)) {
+                usernameFormat = ConsoleColors.BLUE_BOLD_BRIGHT;
+            }
+
+            for (MessageTextComponent i : m.message.message) {
+                String format = "";
+                if (i.text.contains("\u0040")) {
+                    format = ConsoleColors.BLUE_UNDERLINED;
+                }
+                message = String.format("%s%s%s%s", format, message, i.text, ConsoleColors.RESET);
+            }
+
+            String output = String.format("%s %s%s%s: %s", formatter.format(date), usernameFormat, username,
+                    ConsoleColors.RESET, message);
+            r = String.format("%s\n%s",r ,output);
+
+        }
+        return r;
     }
 
     public String formatTerminalChat(IncomingMessageEvent event) {
