@@ -247,9 +247,6 @@ public class MixChat {
             textList.add(new Text(System.lineSeparator()));
             Text username = new Text(messageEvent.userName);
             List<Text> message = new LinkedList<Text>();
-            SimpleDateFormat formatter = new SimpleDateFormat("HH:mm:ss");
-            Date date = new Date();
-            Text dateText = new Text(formatter.format(date));
 
             // Iterate through message elements and add them to the message text
             for (MessageTextComponent i : messageEvent.message.message) {
@@ -281,7 +278,7 @@ public class MixChat {
 
             username.setText(String.format(" %s: ", username.getText()));
 
-            textList.add(dateText);
+            //textList.add(dateText);
             textList.add(username);
             for (Text m : message) {
                 textList.add(m);
