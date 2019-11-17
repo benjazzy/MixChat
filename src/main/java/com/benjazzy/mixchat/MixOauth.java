@@ -11,22 +11,20 @@ import com.google.api.client.auth.oauth2.Credential;
 import com.google.api.client.extensions.java6.auth.oauth2.AuthorizationCodeInstalledApp;
 import com.google.api.client.extensions.jetty.auth.oauth2.LocalServerReceiver;
 import com.google.api.client.http.GenericUrl;
-import com.google.api.client.http.HttpRequestFactory;
-import com.google.api.client.http.HttpResponse;
 import com.google.api.client.http.HttpTransport;
 import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.api.client.json.JsonFactory;
 import com.google.api.client.json.jackson2.JacksonFactory;
 import com.google.api.client.util.store.FileDataStoreFactory;
 
+/**
+ * The MixOauth class handles obtaining the Oauth2 tokens from Mixer.
+ */
 public class MixOauth {
-	// private static final File DATA_STORE_DIR = new
-	// File(System.getProperty("user.home"), ".store/dailymotion_sample");
-	//private static final File DATA_STORE_DIR = new File("/home/benjazzy/.store/dailymotion_sample");
 	private static final File DATA_STORE_DIR = new File(System.getProperty("user.home") + File.separator + ".store" + File.separator + "mixchat");
 
 	/**
-	 * Global instance of the {@link }. The best practice is to make
+	 * Global instance of the data store. The best practice is to make
 	 * it a single globally shared instance across your application.
 	 */
 	private static FileDataStoreFactory DATA_STORE_FACTORY;
@@ -40,23 +38,31 @@ public class MixOauth {
 	/** Global instance of the JSON factory. */
 	static final JsonFactory JSON_FACTORY = new JacksonFactory();
 
+	/** Token and  authorization endpoints for Mixer. */
 	private static final String TOKEN_SERVER_URL = "https://mixer.com/api/v1/oauth/token";
 	private static final String AUTHORIZATION_SERVER_URL = "https://mixer.com/oauth/authorize";
 
+	/** Credential holds the oauth credentials */
 	private Credential credential;
 
+	/**
+	 * Set's up the DATA_STORE_FACTORY and get tokens.
+	 */
 	public MixOauth() {
 		try {
 			DATA_STORE_FACTORY = new FileDataStoreFactory(DATA_STORE_DIR);
 			credential = authorize();
 		} catch (Exception e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}
 
+	/**
+	 * GetAccessToken tries to refresh token and returns the access token.
+	 *
+	 * @return
+	 */
 	public String getAccessToken() {
-		//System.out.println(credential.getExpiresInSeconds());
 		try {
 			credential.refreshToken();
 		} catch (IOException e) {
@@ -65,15 +71,11 @@ public class MixOauth {
 		return credential.getAccessToken();
 	}
 
-	public static HttpResponse executeGet(HttpTransport transport, JsonFactory jsonFactory, String accessToken,
-			GenericUrl url) throws IOException {
-		Credential credential = new Credential(BearerToken.authorizationHeaderAccessMethod())
-				.setAccessToken(accessToken);
-		HttpRequestFactory requestFactory = transport.createRequestFactory(credential);
-		return requestFactory.buildGetRequest(url).execute();
-	}
-
-	/** Authorizes the installed application to access user's protected data. */
+	/**
+	 * Authorizes MixChat application to access user's account.
+	 *
+	 * @return New authorization.
+	 */
 	private static Credential authorize() throws Exception {
 		OAuth2ClientCredentials.errorIfNotSpecified();
 		// set up authorization code flow
@@ -83,7 +85,6 @@ public class MixOauth {
 				OAuth2ClientCredentials.API_KEY, AUTHORIZATION_SERVER_URL).setScopes(Arrays.asList(SCOPE))
 						.setDataStoreFactory(DATA_STORE_FACTORY).build();
 		// authorize
-		//GoogleAuthorizationCodeFlow gFlow = new GoogleAuthorizationCodeFlow.Builder(HTTP_TRANSPORT, JSON_FACTORY, OAuth2ClientCredentials.API_KEY, OAuth2ClientCredentials.API_SECRET, Arrays.asList(SCOPE)).setAccessType("offline").build();
 		LocalServerReceiver receiver = new LocalServerReceiver.Builder().setHost(OAuth2ClientCredentials.DOMAIN)
 				.setPort(OAuth2ClientCredentials.PORT).build();
 		return new AuthorizationCodeInstalledApp(flow, receiver).authorize("user");

@@ -4,17 +4,30 @@ import com.mixer.api.resource.MixerUser;
 
 import java.util.List;
 
+/**
+ * Used to store information on the connected users.
+ */
 public class MixChatUser {
-    private int id;
-    private String userName;
-    private List<MixerUser.Role> roleList;
+    private int id;                         /** User id. */
+    private String userName;                /** Username. */
+    private List<MixerUser.Role> roleList;  /** List of user roles. */
 
+    /**
+     * @param id        Id of the new user.
+     * @param userName  Username of the new user.
+     * @param roleList  Roles of the new user.
+     */
     MixChatUser(int id, String userName, List<MixerUser.Role> roleList) {
         this.id = id;
         this.userName = userName;
         this.roleList = roleList;
     }
 
+    /**
+     * Returns the highest level role from the list of roles.
+     *
+     * @return  Primary role.
+     */
     public MixerUser.Role getPrimaryRole() {
         if (this.roleList.contains(MixerUser.Role.OWNER)) {
             return MixerUser.Role.OWNER;

@@ -4,12 +4,9 @@ package com.benjazzy.mixchat;
  * Hello world!
  */
 
-import com.google.api.services.oauth2.Oauth2;
 import com.mixer.api.MixerAPI;
-import com.mixer.api.http.SortOrderMap;
 import com.mixer.api.resource.MixerUser;
 import com.mixer.api.resource.channel.MixerChannel;
-import com.mixer.api.resource.chat.AbstractChatReply;
 import com.mixer.api.resource.chat.MixerChat;
 import com.mixer.api.resource.chat.events.IncomingMessageEvent;
 import com.mixer.api.resource.chat.events.UserJoinEvent;
@@ -23,14 +20,11 @@ import com.mixer.api.resource.chat.replies.AuthenticationReply;
 import com.mixer.api.resource.chat.replies.ChatHistoryReply;
 import com.mixer.api.resource.chat.replies.ReplyHandler;
 import com.mixer.api.resource.chat.ws.MixerChatConnectable;
-import com.mixer.api.response.channels.ShowChannelsResponse;
 import com.mixer.api.services.impl.ChannelsService;
 import com.mixer.api.services.impl.ChatService;
 import com.mixer.api.services.impl.UsersService;
 import javafx.application.Platform;
-import javafx.geometry.Orientation;
 import javafx.scene.control.ScrollPane;
-import javafx.scene.control.Separator;
 import javafx.scene.layout.Pane;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Text;
@@ -40,7 +34,6 @@ import org.json.JSONObject;
 
 import javax.annotation.Nullable;
 import java.io.BufferedReader;
-import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
@@ -51,54 +44,68 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 
+/**
+ * The MixChat class handles communcation with the Mixer API
+ * and displays the chat to the terminal and javafx textflow chatBox.
+ */
 public class MixChat {
-    // private final File DATA_STORE_DIR = new
-    // File(System.getProperty("user.home"), ".store/dailymotion_sample");
 
-    private boolean connected = false;
-    private String token = "";
-    private int chatId = 0;
 
-    private List<MixChatUser> users = new LinkedList<MixChatUser>();
+    private boolean connected = false;                      /** The connected variable is used to store whether the chat is connected. */
+    private String token = "";                              /** The token variable is used to store the Oauth2 token. */
+    private int chatId = 0;                                 /** ChatId stores the id of the currently connected chat. */
+    private List<MixChatUser> users = new LinkedList<>();   /** Users stores a list of users currently connected to the chat. */
 
-    private TextFlow chatBox;
-    private TextFlow userList;
+    private TextFlow chatBox;                               /** ChatBox is the TextFlow where the chat is displayed. */
+    private TextFlow userList;                              /** UserList is the TextFlow where the list of users from users is displayed. */
+
+    /**
+     * The only reason for chatScrollPane's existence is so that it can be set to always scroll to the bottom.
+     * ChatBox is contained inside chatScrollPane.
+     */
     private ScrollPane chatScrollPane;
 
-    private MixerAPI mixer;
-    private MixerChatConnectable chatConnectable;
+    private MixerAPI mixer;                         /** Mixer stores the main MixerAPI object */
+    private MixerChatConnectable chatConnectable;   /** ChatConnectable is used interface with the connected chat. */
 
+    /**
+     * The constructor links the javafx variables to their Panes.
+     * @param root  Root javafx Pane of the application.
+     */
     MixChat(Pane root) {
         System.out.println("Setting chatBox");
         chatBox = (TextFlow) root.lookup("#ChatBox");
         userList = (TextFlow) root.lookup("#UserList");
         chatScrollPane = (ScrollPane) root.lookup("#ChatScrollPane");
 
+        /** Sets chatScrollPane to always scroll to the bottom */
         chatScrollPane.vvalueProperty().bind(chatBox.heightProperty());
     }
 
+    /**
+     * Connects to the specified Mixer chat.
+     *
+     * @param chatName                  Name of the channel that is being connected to.
+     * @throws InterruptedException
+     * @throws ExecutionException
+     */
     public void connect(String chatName) throws InterruptedException, ExecutionException {
         System.out.println(chatName);
-        chatBox.getChildren().clear();
-        /*if (!chatBox.getChildren().isEmpty()) {
-            // Separator
-            final Separator separator = new Separator(Orientation.HORIZONTAL);
-            separator.prefWidthProperty().bind(chatBox.widthProperty());
-            separator.setStyle("-fx-background-color: red;");
-            chatBox.getChildren().add(separator);
+        chatBox.getChildren().clear();      /** Clears the chat for the next connection. */
 
-            chatBox.getChildren().add(new Text(System.lineSeparator()));
-        }*/
-        token = "";
+        /** Gets an Oauth2 access token from MixOauth. */
         MixOauth oauth = new MixOauth();
-        //System.out.println(oauth.getAccessToken());
         token = oauth.getAccessToken();
 
+        /** Authenticates with Mixer using the Oauth2 token. */
         mixer = new MixerAPI("3721d6b1332a6db44a22ab5b71ae8e34ae187ee995b38f1a", token);
-        //final MixerUser[] user = {mixer.use(UsersService.class).getCurrent().get()};
-        int id = 0;
+        int id = 0;                         /** Stores the chat id. */
 
-        String result = null;
+        // TODO replace with mixer.use().findOneByToken(chatName).get();
+        /**
+         * Resolves the channel name into chatId.
+         */
+        String result = "";
         try {
             result = getHTML(String.format("https://mixer.com/api/v1/channels/%s?fields=id", chatName));
             JSONObject obj = new JSONObject(result);
@@ -109,45 +116,31 @@ public class MixChat {
             e.printStackTrace();
         }
 
-
-        //System.out.println(user[0].channel.id);
-
-		/*Futures.addCallback(mixer.use(UsersService.class).search(chatName), new ResponseHandler<UserSearchResponse>() {
-			// Set up a handler for the response
-			@Override public void onSuccess(UserSearchResponse response) {
-				for (MixerUser u : response) {
-					System.out.println(u.username);
-					if (u.username.equals(chatName)) {
-					    System.out.println(String.format("found %s", u.username));
-					    id[0] = u.channel.id;
-                    }
-				}
-			}
-		});*/
-
+        /**
+         * Set the user, chat, and channel objects from channelName.
+         */
         MixerUser user = mixer.use(UsersService.class).getCurrent().get();
         MixerChat chat = mixer.use(ChatService.class).findOne(id).get();
         MixerChannel channel = mixer.use(ChannelsService.class).findOneByToken(chatName).get();
 
-        int rank = 0;
-
-        ShowChannelsResponse channels = getChannelsPage(0, mixer);
-        //System.out.println(channels.size());
-
-        //run(0, 0, 1, mixer);
-
+        /** Set chatConnectable to use the current chat. */
         chatConnectable = chat.connectable(mixer);
 
+        /**
+         * Authenticate with mixer.
+         * If sucsesfully authenticated to the chat then:
+         *      Print Connected,
+         *      Get message history.
+         */
         if (chatConnectable.connect()) {
 
             chatConnectable.send(AuthenticateMessage.from(channel, user, chat.authkey),
                     new ReplyHandler<AuthenticationReply>() {
                         public void onSuccess(AuthenticationReply reply) {
-                            //chatConnectable.send(ChatSendMethod.of("Hello World!"));
-                            //sendMessage("Hello World!");
                             System.out.println("Connected");
                             connected = true;
 
+                            /** Get previous 50 messages and update the terminal and chatBox */
                             chatConnectable.send(GetHistoryMethod.forCount(50), new ReplyHandler<ChatHistoryReply>() {
                                 @Override
                                 public void onSuccess(@Nullable ChatHistoryReply result) {
@@ -163,29 +156,20 @@ public class MixChat {
                             var1.printStackTrace();
                         }
                     });
-
-            /*chatConnectable.send(AuthenticateMessage.from(channel, user, chat.authkey),
-                    new ReplyHandler<ChatHistoryReply>() {
-                        public void onSuccess(ChatHistoryReply reply) {
-                            //chatConnectable.send(ChatSendMethod.of("Hello World!"));
-                            //sendMessage("Hello World!");
-                            //System.out.println(reply.messages);
-                        }
-
-                        public void onFailure(Throwable var1) {
-                            var1.printStackTrace();
-                        }
-                    });*/
+            // TODO Check if oddity with user list is due to chat not authenticating yet.
+            /** Updates the list of current viewers. */
             Platform.runLater(() -> {updateUsers(chatId);});
         } else {
             System.out.println("Failed to connect");
         }
 
-
-
+        /** Registers events for incomming messages as well as user join and leave */
         registerIncommingChat();
     }
 
+    /**
+     * Disconnect from the current mixer chat.
+     */
     public void disconnect() {
         if (isConnected()) {
             chatConnectable.disconnect();
@@ -193,18 +177,31 @@ public class MixChat {
         }
     }
 
+    /**
+     * Format the text from an incoming message.
+     *
+     * @param event     Incoming message event that conains all the data of the message.
+     * @return          Returns a list of formated text objects to be displayed in the chatBox.
+     */
     public List<Text> formatChatBox(IncomingMessageEvent event) {
-        List<Text> textList = new ArrayList<Text>();
-        Text username = new Text(event.data.userName);
-        List<Text> message = new LinkedList<Text>();
+        List<Text> textList = new ArrayList<>();                            /** List of Text objects to be returned. */
+        Text username = new Text(event.data.userName);                      /** Username of the user that sent the message. */
+        List<Text> message = new LinkedList<>();                            /** List of message elements from event. */
+
+        /**
+         * Formats the current time to be added to textList.
+         */
         SimpleDateFormat formatter = new SimpleDateFormat("HH:mm:ss");
         Date date = new Date();
         Text dateText = new Text(formatter.format(date));
 
-        // Iterate through message elements and add them to the message text
+        /**
+         * Iterates the message elements and adds them to the message list.
+         * Also checks if the message element contains an @ symbol and highlights it blue and adds
+         * an underline if so.
+         */
         for (MessageTextComponent i : event.data.message.message) {
             Text m = new Text(i.text);
-            //message.setText(String.format("%s%s", message.getText(), i.text));
             if (m.getText().contains("\u0040")) {
                 m.setFill(Color.BLUE);
                 m.setUnderline(true);
@@ -213,6 +210,9 @@ public class MixChat {
 
         }
 
+        /**
+         * Colors the username based on the user role in chat.
+         */
         // Add color to username by user role
         if (event.data.userRoles.contains(MixerUser.Role.MOD)) {
             username.setFill(Color.GREEN);
@@ -229,8 +229,12 @@ public class MixChat {
             username.setFill(Color.TEAL);
         }
 
+        /** Adds spaces between the elements and adds a colon after the username. */
         username.setText(String.format(" %s: ", username.getText()));
 
+        /**
+         * Adds together all the elements into one text list.
+         */
         textList.add(dateText);
         textList.add(username);
         for (Text m : message) {
@@ -240,18 +244,32 @@ public class MixChat {
         return textList;
     }
 
+    /**
+     * Format the messages from previous messages.
+     *
+     * @param event     Contains all the information on the past messages.
+     * @return          Returns a formated list of messages to be displayed in chatBox.
+     */
     public List<Text> formatChatBox(ChatHistoryReply event) {
-        List<Text> textList = new ArrayList<Text>();
+        /** List of formatted Text objects to be returned. */
+        List<Text> textList = new ArrayList<>();
 
+        /**
+         * Iterate through each message and format it.
+         */
         for (IncomingMessageData messageEvent : event.messages) {
+            /** Add a new line to the beginning to separate it from the previous line. */
             textList.add(new Text(System.lineSeparator()));
+            /** Gets the username from messageEvent. */
             Text username = new Text(messageEvent.userName);
-            List<Text> message = new LinkedList<Text>();
+            /** List of message elements from event. */
+            List<Text> message = new LinkedList<>();
 
-            // Iterate through message elements and add them to the message text
+            /**
+             * Iterate through message elements and add them to the message text.
+             */
             for (MessageTextComponent i : messageEvent.message.message) {
                 Text m = new Text(i.text);
-                //message.setText(String.format("%s%s", message.getText(), i.text));
                 if (m.getText().contains("\u0040")) {
                     m.setFill(Color.BLUE);
                     m.setUnderline(true);
@@ -260,7 +278,9 @@ public class MixChat {
 
             }
 
-            // Add color to username by user role
+            /**
+             * Colors the username based on the user role in chat.
+             */
             if (messageEvent.userRoles.contains(MixerUser.Role.MOD)) {
                 username.setFill(Color.GREEN);
             } else if (messageEvent.userRoles.contains(MixerUser.Role.PRO)) {
@@ -276,9 +296,12 @@ public class MixChat {
                 username.setFill(Color.TEAL);
             }
 
+            /** Adds spaces between the elements and adds a colon after the username. */
             username.setText(String.format(" %s: ", username.getText()));
 
-            //textList.add(dateText);
+            /**
+             * Adds each element to textList.
+             */
             textList.add(username);
             for (Text m : message) {
                 textList.add(m);
@@ -287,16 +310,33 @@ public class MixChat {
         return textList;
     }
 
+    /**
+     * Formats messages from previous messages for the terminal.
+     *
+     * @param event     Contains previous messages.
+     * @return          Returns a formatted String for the terminal.
+     */
     public String formatTerminalChat(ChatHistoryReply event) {
+        /** String r is what is returned by the function. */
         String r = "";
+
+        /**
+         * Iterate through each previous message and format it.
+         */
         for (IncomingMessageData m : event.messages) {
-            String username = m.userName;
-            String usernameFormat = "";
-            String message = "";
+            String username = m.userName;       /** Set the username from the message username. */
+            String usernameFormat = "";         /** Contains the ANSI escape sequences to color the username. */
+            String message = "";                /** Contains the chat message. */
+
+            /**
+             * Setup the date formatter to be displayed.
+             */
             SimpleDateFormat formatter = new SimpleDateFormat("HH:mm:ss");
             Date date = new Date();
 
-
+            /**
+             * Set usernameFormat to the correct color based on the user role in chat.
+             */
             if (m.userRoles.contains(MixerUser.Role.MOD)) {
                 usernameFormat = ConsoleColors.GREEN_BOLD_BRIGHT;
             } else if (m.userRoles.contains(MixerUser.Role.PRO)) {
@@ -313,6 +353,9 @@ public class MixChat {
                 usernameFormat = ConsoleColors.BLUE_BOLD_BRIGHT;
             }
 
+            /**
+             * Add each message component to the message string.
+             */
             for (MessageTextComponent i : m.message.message) {
                 String format = "";
                 if (i.text.contains("\u0040")) {
@@ -321,21 +364,36 @@ public class MixChat {
                 message = String.format("%s%s%s%s", format, message, i.text, ConsoleColors.RESET);
             }
 
+            /**
+             * Put all the elements together and add a newline.
+             */
             String output = String.format("%s %s%s%s: %s", formatter.format(date), usernameFormat, username,
                     ConsoleColors.RESET, message);
             r = String.format("%s\n%s",r ,output);
-
         }
         return r;
     }
 
+    /**
+     * Formats messages from an incoming message for the terminal.
+     *
+     * @param event     Contains incoming message.
+     * @return          Returns formatted String for the terminal.
+     */
     public String formatTerminalChat(IncomingMessageEvent event) {
-        String username = event.data.userName;
-        String usernameFormat = "";
-        String message = "";
+        String username = event.data.userName;      /** Set the username from the message username. */
+        String usernameFormat = "";                 /** Contains the ANSI escape sequences to color the username. */
+        String message = "";                        /** Contains the chat message. */
+
+        /**
+         * Setup the date formatter to be displayed.
+         */
         SimpleDateFormat formatter = new SimpleDateFormat("HH:mm:ss");
         Date date = new Date();
 
+        /**
+         * Color the username based on the user role in chat.
+         */
         if (event.data.userRoles.contains(MixerUser.Role.MOD)) {
             usernameFormat = ConsoleColors.GREEN_BOLD_BRIGHT;
         } else if (event.data.userRoles.contains(MixerUser.Role.PRO)) {
@@ -352,6 +410,9 @@ public class MixChat {
             usernameFormat = ConsoleColors.BLUE_BOLD_BRIGHT;
         }
 
+        /**
+         * Add each message component to the message string.
+         */
         for (MessageTextComponent m : event.data.message.message) {
             String format = "";
             if (m.text.contains("\u0040")) {
@@ -360,41 +421,32 @@ public class MixChat {
             message = String.format("%s%s%s%s", format, message, m.text, ConsoleColors.RESET);
         }
 
+        /**
+         * Put all the elements together.
+         */
         String output = String.format("%s %s%s%s: %s", formatter.format(date), usernameFormat, username,
                 ConsoleColors.RESET, message);
         return output;
 
     }
 
-    public int run(int page, int viewers, int rank, MixerAPI mixer) throws ExecutionException, InterruptedException {
-        ShowChannelsResponse channels = getChannelsPage(page, mixer);
-        for (int i = 0; i < channels.size(); i++) {
-            MixerChannel channel = channels.get(i);
-            if (channel.viewersTotal <= viewers) {
-                System.out.format("Your rank on Mixer is %d!\n", rank);
-                return rank;
-            }
-            System.out.format("Your rank is at least %d...\n", rank);
-            rank++;
-        }
-        return run(page + 1, viewers, rank, mixer);
-    }
-
-    public ShowChannelsResponse getChannelsPage(int page, MixerAPI mixer) throws ExecutionException, InterruptedException {
-        SortOrderMap<ShowChannelsResponse.Attributes, ShowChannelsResponse.Ordering> map = new SortOrderMap<>();
-        map.put(ShowChannelsResponse.Attributes.VIEWERS_TOTAL, ShowChannelsResponse.Ordering.DESCENDING);
-        return mixer.use(ChannelsService.class).show(map, page, 10).get();
-    }
-
+    /**
+     * Send a message to chat.
+     *
+     * @param message   The message to be sent.
+     */
     public void sendMessage(String message) {
         chatConnectable.send(ChatSendMethod.of(message));
     }
 
+    /**
+     * Register incoming chat messages as well as user join and leave events.
+     */
     public void registerIncommingChat() {
+        /** On IncomingMessageEvent update the chatBox and the terminal with the incoming message and update the users in the chat. */
         chatConnectable.on(IncomingMessageEvent.class, mEvent -> {
             Platform.runLater(() -> {
                 updateText(formatChatBox(mEvent));
-                //addUser(new MixChatUser(mEvent.data.userId, mEvent.data.userName, mEvent.data.userRoles));
                 updateUsers(chatId);
             });
             String output = formatTerminalChat(mEvent);
@@ -403,11 +455,13 @@ public class MixChat {
                 chatConnectable.send(ChatSendMethod.of(String.format("@%s PONG!", mEvent.data.userName)));
             }
         });
+        /** On UserJoinEvent update the users in chat. */
         chatConnectable.on(UserJoinEvent.class, jEvent -> {
             Platform.runLater(() -> {
                 updateUsers(chatId);
             });
         });
+        /** On UserLeaveEvent update the users in chat. */
         chatConnectable.on(UserLeaveEvent.class, lEvent -> {
             Platform.runLater(() -> {
                 updateUsers(chatId);
@@ -415,6 +469,11 @@ public class MixChat {
         });
     }
 
+    /**
+     * Update the chatBox with the new messages.
+     *
+     * @param text  List of Text objects to be added to chatBox.
+     */
     private void updateText(List<Text> text) {
         for (Text t : text) {
             chatBox.getChildren().add(t);
@@ -423,16 +482,25 @@ public class MixChat {
 
     }
 
+    /**
+     * Update user
+     */
     public void updateUserList() {
+        /**
+         * Lists of Text that contain the users in their respective primary roles.
+         */
         Text owner = new Text();
-        List<Text> founder = new LinkedList<Text>();
-        List<Text> staff = new LinkedList<Text>();
-        List<Text> globalMod = new LinkedList<Text>();
-        List<Text> pro = new LinkedList<Text>();
-        List<Text> mod = new LinkedList<Text>();
-        List<Text> user = new LinkedList<Text>();
+        List<Text> founder = new LinkedList<>();
+        List<Text> staff = new LinkedList<>();
+        List<Text> globalMod = new LinkedList<>();
+        List<Text> pro = new LinkedList<>();
+        List<Text> mod = new LinkedList<>();
+        List<Text> user = new LinkedList<>();
+
+        /**
+         * For each user in users add that user to their primary list
+         */
         for (MixChatUser u : users) {
-            //System.out.println(String.format("%s : %s", u.getUserName(), u.getPrimaryRole()));
             if (u.getPrimaryRole() == MixerUser.Role.OWNER) {
                 owner = new Text(u.getUserName());
             } else if (u.getPrimaryRole() == MixerUser.Role.FOUNDER) {
@@ -462,6 +530,10 @@ public class MixChat {
             }
         }
 
+        // TODO add function to simplify code.
+        /**
+         * Add the users to userList.
+         */
         userList.getChildren().clear();
         if (owner != new Text()) {
             userList.getChildren().add(new Text("OWNER"));
@@ -519,19 +591,34 @@ public class MixChat {
         }
     }
 
+    // TODO Use Mixer library to get list of users.
+
+    /**
+     * Update users from Mixer API chats/(id)/users.
+     *
+     * @param id    Id of the channel to get users from.
+     */
     public void updateUsers(int id) {
         try {
+            /**
+             * Get json array of users.
+             */
             String result = getHTML(String.format("https://mixer.com/api/v1/chats/%d/users", id));
-
             JSONArray c = new JSONArray(result);
 
+            /**
+             * Iterate through array of users and add them to the list of users.
+             */
             for (int i = 0; i < c.length(); i++) {
                 JSONObject j = c.getJSONObject(i);
                 int userId = j.getInt("userId");
                 String name = j.getString("username");
-                List<MixerUser.Role> userRoles = new LinkedList<MixerUser.Role>();
+                List<MixerUser.Role> userRoles = new LinkedList<>();
                 JSONArray roles = j.getJSONArray("userRoles");
 
+                /**
+                 * Iterate through list of roles and add them to userRoles.
+                 */
                 for (int k = 0; k < roles.length(); k++) {
                     if (roles.getString(k).equals("Owner")) {
                         userRoles.add(MixerUser.Role.OWNER);
@@ -549,7 +636,7 @@ public class MixChat {
                         userRoles.add(MixerUser.Role.STAFF);
                     }
                 }
-
+                /** Add the new user to the list of users. */
                 addUser(new MixChatUser(userId, name, userRoles));
             }
         } catch (Exception e) {
@@ -557,17 +644,15 @@ public class MixChat {
         }
     }
 
+    /**
+     * Check if user is already in users and if not add user to the list of users, users.
+     *
+     * @param user  MixUser object to be added to the list of users
+     */
     public void addUser(MixChatUser user) {
-        //MixerUser user = mixer.use(UsersService.class).findOne(id).get();
-
-        if (users.contains(user)) {
-            //System.out.println("user already in list");
-        }
         for (MixChatUser u : users) {
             if (u.getUserName().equals(user.getUserName())) {
-                //System.out.println("user already in list");
                 updateUserList();
-                //System.out.println(u.getUserName());
                 return;
             }
         }
@@ -577,6 +662,13 @@ public class MixChat {
         updateUserList();
     }
 
+    /**
+     * Used to send GET over http.
+     *
+     * @param urlToRead     Url to send the GET to.
+     * @return              Returns the response from the GET.
+     * @throws Exception
+     */
     public String getHTML(String urlToRead) throws Exception {
         StringBuilder result = new StringBuilder();
         URL url = new URL(urlToRead);
@@ -591,10 +683,11 @@ public class MixChat {
         return result.toString();
     }
 
-	public void setToken(String t) {
-		token = t;
-	}
-
+    /**
+     * Checks whether or not the chat is currently connected.
+     *
+     * @return  Connected.
+     */
 	public boolean isConnected() {
 		return connected;
 	}
