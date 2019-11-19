@@ -19,7 +19,7 @@ public class MixUI extends Application {
     private static MixUI single_instance = null;
 
     public MixChat chat;                            /** Handles the Mixer API. */
-
+    private static Pane root;                               /** Root pane of the main menu. */
     /**
      * Set single_instance to itself.
      */
@@ -47,7 +47,7 @@ public class MixUI extends Application {
         loader.setLocation(getClass().getResource("/MixChat.fxml"));
 
         // Create the Pane and all Details
-        Pane root = loader.load();
+        root = loader.load();
 
         // Create the Scene
         Scene scene = new Scene(root);
