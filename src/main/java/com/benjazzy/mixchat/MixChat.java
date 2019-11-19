@@ -4,13 +4,19 @@ package com.benjazzy.mixchat;
  * Hello world!
  */
 
+import com.google.api.client.json.Json;
+import com.google.common.util.concurrent.*;
+import com.google.gson.JsonObject;
 import com.mixer.api.MixerAPI;
+import com.mixer.api.http.MixerHttpClient;
 import com.mixer.api.resource.MixerUser;
 import com.mixer.api.resource.channel.MixerChannel;
 import com.mixer.api.resource.chat.MixerChat;
+import com.mixer.api.resource.chat.events.DeleteMessageEvent;
 import com.mixer.api.resource.chat.events.IncomingMessageEvent;
 import com.mixer.api.resource.chat.events.UserJoinEvent;
 import com.mixer.api.resource.chat.events.UserLeaveEvent;
+import com.mixer.api.resource.chat.events.data.DeleteMessageData;
 import com.mixer.api.resource.chat.events.data.IncomingMessageData;
 import com.mixer.api.resource.chat.events.data.MessageComponent.MessageTextComponent;
 import com.mixer.api.resource.chat.methods.AuthenticateMessage;
@@ -24,25 +30,30 @@ import com.mixer.api.services.impl.ChannelsService;
 import com.mixer.api.services.impl.ChatService;
 import com.mixer.api.services.impl.UsersService;
 import javafx.application.Platform;
+import javafx.scene.Node;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.layout.Pane;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Text;
 import javafx.scene.text.TextFlow;
+import jdk.nashorn.internal.parser.JSONParser;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
 import javax.annotation.Nullable;
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
-import java.net.HttpURLConnection;
-import java.net.URL;
+import javax.net.ssl.KeyManagerFactory;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLSocketFactory;
+import javax.net.ssl.TrustManagerFactory;
+import java.io.*;
+import java.net.*;
+import java.security.KeyManagementException;
+import java.security.KeyStore;
+import java.security.NoSuchAlgorithmException;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executors;
 
 /**
  * The MixChat class handles communcation with the Mixer API
@@ -67,7 +78,7 @@ public class MixChat {
 
     private MixerAPI mixer;                         /** Mixer stores the main MixerAPI object */
     private MixerChatConnectable chatConnectable;   /** ChatConnectable is used interface with the connected chat. */
-
+    private MixSocket socket;                       /** Used to manually interface with the Mixer API */
     /**
      * The constructor links the javafx variables to their Panes.
      * @param root  Root javafx Pane of the application.
@@ -122,6 +133,8 @@ public class MixChat {
         MixerUser user = mixer.use(UsersService.class).getCurrent().get();
         MixerChat chat = mixer.use(ChatService.class).findOne(id).get();
         MixerChannel channel = mixer.use(ChannelsService.class).findOneByToken(chatName).get();
+
+        System.out.println(user.id);
 
         /** Set chatConnectable to use the current chat. */
         chatConnectable = chat.connectable(mixer);
@@ -183,17 +196,17 @@ public class MixChat {
      * @param event     Incoming message event that conains all the data of the message.
      * @return          Returns a list of formated text objects to be displayed in the chatBox.
      */
-    public List<Text> formatChatBox(IncomingMessageEvent event) {
-        List<Text> textList = new ArrayList<>();                            /** List of Text objects to be returned. */
-        Text username = new Text(event.data.userName);                      /** Username of the user that sent the message. */
-        List<Text> message = new LinkedList<>();                            /** List of message elements from event. */
+    public List<MixMessage> formatChatBox(IncomingMessageEvent event) {
+        List<MixMessage> textList = new ArrayList<>();                            /** List of Text objects to be returned. */
+        MixMessage username = new MixMessage(event.data.userName, event.data.id); /** Username of the user that sent the message. */
+        List<MixMessage> message = new LinkedList<>();                            /** List of message elements from event. */
 
         /**
          * Formats the current time to be added to textList.
          */
         SimpleDateFormat formatter = new SimpleDateFormat("HH:mm:ss");
         Date date = new Date();
-        Text dateText = new Text(formatter.format(date));
+        MixMessage dateText = new MixMessage(formatter.format(date), event.data.id);
 
         /**
          * Iterates the message elements and adds them to the message list.
@@ -201,7 +214,7 @@ public class MixChat {
          * an underline if so.
          */
         for (MessageTextComponent i : event.data.message.message) {
-            Text m = new Text(i.text);
+            MixMessage m = new MixMessage(i.text, event.data.id);
             if (m.getText().contains("\u0040")) {
                 m.setFill(Color.BLUE);
                 m.setUnderline(true);
@@ -237,10 +250,11 @@ public class MixChat {
          */
         textList.add(dateText);
         textList.add(username);
-        for (Text m : message) {
+        for (MixMessage m : message) {
             textList.add(m);
         }
 
+        System.out.println(event.data.id);
         return textList;
     }
 
@@ -250,26 +264,26 @@ public class MixChat {
      * @param event     Contains all the information on the past messages.
      * @return          Returns a formated list of messages to be displayed in chatBox.
      */
-    public List<Text> formatChatBox(ChatHistoryReply event) {
+    public List<MixMessage> formatChatBox(ChatHistoryReply event) {
         /** List of formatted Text objects to be returned. */
-        List<Text> textList = new ArrayList<>();
+        List<MixMessage> textList = new ArrayList<>();
 
         /**
          * Iterate through each message and format it.
          */
         for (IncomingMessageData messageEvent : event.messages) {
             /** Add a new line to the beginning to separate it from the previous line. */
-            textList.add(new Text(System.lineSeparator()));
+            textList.add(new MixMessage(System.lineSeparator(), messageEvent.id));
             /** Gets the username from messageEvent. */
-            Text username = new Text(messageEvent.userName);
+            MixMessage username = new MixMessage(messageEvent.userName, messageEvent.id);
             /** List of message elements from event. */
-            List<Text> message = new LinkedList<>();
+            List<MixMessage> message = new LinkedList<>();
 
             /**
              * Iterate through message elements and add them to the message text.
              */
             for (MessageTextComponent i : messageEvent.message.message) {
-                Text m = new Text(i.text);
+                MixMessage m = new MixMessage(i.text, messageEvent.id);
                 if (m.getText().contains("\u0040")) {
                     m.setFill(Color.BLUE);
                     m.setUnderline(true);
@@ -303,7 +317,7 @@ public class MixChat {
              * Adds each element to textList.
              */
             textList.add(username);
-            for (Text m : message) {
+            for (MixMessage m : message) {
                 textList.add(m);
             }
         }
@@ -431,7 +445,7 @@ public class MixChat {
     }
 
     /**
-     * Send a message to chat.
+     * Send a message to chat.getHTML
      *
      * @param message   The message to be sent.
      */
@@ -455,6 +469,12 @@ public class MixChat {
                 chatConnectable.send(ChatSendMethod.of(String.format("@%s PONG!", mEvent.data.userName)));
             }
         });
+        /** On DeleteMessageEvent remove the message from chatBox with the uuid from dEvent */
+        chatConnectable.on(DeleteMessageEvent.class, dEvent -> {
+            Platform.runLater(() -> {
+                deleteMessage(dEvent);
+            });
+        });
         /** On UserJoinEvent update the users in chat. */
         chatConnectable.on(UserJoinEvent.class, jEvent -> {
             Platform.runLater(() -> {
@@ -470,12 +490,165 @@ public class MixChat {
     }
 
     /**
+     * Delete message from chatBox using uuid from DeleteMessageEvent.
+     *
+     * @param event     DeleteMessageEvent that contains the uuid of the message to delete.
+     */
+    public void deleteMessage(DeleteMessageEvent event) {
+        for (Node messageNode : chatBox.getChildren()) {
+            if (messageNode instanceof MixMessage) {
+                MixMessage message = (MixMessage) messageNode;
+                if (message.getUuid().equals(event.data.id.toString())) {
+                    message.setStrikethrough(true);
+                }
+            }
+        }
+    }
+
+    /**
+     * Send delete message uuid to the Mixer API.
+     *
+     * @param uuid  Id of the message to be deleted.
+     */
+    public void deleteMessage(String uuid) {
+        try {
+            /**
+             * Get the id of the user that we are going to connect as.
+             */
+            JSONObject user = new JSONObject(getHTML("https://mixer.com/api/v1/channels/" + chatId));
+            int userID = user.getJSONObject("user").getInt("id");
+
+            URL url = new URL("https://mixer.com/api/v1/chats/" + chatId);      /** The url of the chat endpoint. */
+            String authkey = getAuthkey(url);                                      /** Get the authkey to be used to authenticate with the API. */
+
+            /**
+             * Create a new MixSocket where when successfully authenticated delete the message.
+             */
+            socket = getSocket(url, new MixSocketReply() {
+                @Override
+                public void onReply(JSONObject reply) {
+                    if (reply.has("data")) {
+                        Object data = reply.get("data");
+                        if (data instanceof JSONObject) {
+                            JSONObject jData = (JSONObject) data;
+                            if (jData.has("authenticated")) {
+                                if (jData.getBoolean("authenticated")) {
+                                    socketDelete(socket, uuid);
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+            socketAuth(socket, authkey, chatId, userID);    /** Authenticate with the API and delete the message if successful. */
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+    }
+
+    private String getAuthkey(URL url) throws IOException {
+        MixOauth oauth = new MixOauth();
+
+        // Sending get request
+        HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+
+        conn.setRequestProperty("Authorization","Bearer "+ oauth.getAccessToken());
+        //e.g. bearer token= eyJhbGciOiXXXzUxMiJ9.eyJzdWIiOiPyc2hhcm1hQHBsdW1zbGljZS5jb206OjE6OjkwIiwiZXhwIjoxNTM3MzQyNTIxLCJpYXQiOjE1MzY3Mzc3MjF9.O33zP2l_0eDNfcqSQz29jUGJC-_THYsXllrmkFnk85dNRbAw66dyEKBP5dVcFUuNTA8zhA83kk3Y41_qZYx43T
+
+        conn.setRequestProperty("Content-Type","application/json");
+        conn.setRequestMethod("GET");
+
+
+        BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()));
+        String output;
+
+        StringBuffer response = new StringBuffer();
+        while ((output = in.readLine()) != null) {
+            response.append(output);
+        }
+
+        in.close();
+
+        JSONObject obj = new JSONObject(response.toString());
+        String authkey = obj.getString("authkey");
+        return authkey;
+    }
+
+    private String getEndpoints(URL url) throws IOException {
+        MixOauth oauth = new MixOauth();
+
+        // Sending get request
+        HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+
+        conn.setRequestProperty("Authorization","Bearer "+ oauth.getAccessToken());
+        //e.g. bearer token= eyJhbGciOiXXXzUxMiJ9.eyJzdWIiOiPyc2hhcm1hQHBsdW1zbGljZS5jb206OjE6OjkwIiwiZXhwIjoxNTM3MzQyNTIxLCJpYXQiOjE1MzY3Mzc3MjF9.O33zP2l_0eDNfcqSQz29jUGJC-_THYsXllrmkFnk85dNRbAw66dyEKBP5dVcFUuNTA8zhA83kk3Y41_qZYx43T
+
+        conn.setRequestProperty("Content-Type","application/json");
+        conn.setRequestMethod("GET");
+
+
+        BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()));
+        String output;
+
+        StringBuffer response = new StringBuffer();
+        while ((output = in.readLine()) != null) {
+            response.append(output);
+        }
+
+        in.close();
+
+        JSONObject obj = new JSONObject(response.toString());
+        JSONArray array = obj.getJSONArray("endpoints");
+        return array.getString(0);
+    }
+
+    private MixSocket getSocket(URL url, MixSocketReply reply) throws KeyManagementException, NoSuchAlgorithmException, IOException, URISyntaxException, InterruptedException {
+        MixSocket socket = new MixSocket(new URI(getEndpoints(url)), reply);
+
+        SSLContext sslContext = null;
+        sslContext = SSLContext.getInstance( "TLS" );
+        sslContext.init( null, null, null );
+
+        SSLSocketFactory factory = sslContext.getSocketFactory();// (SSLSocketFactory) SSLSocketFactory.getDefault();
+
+        socket.setSocketFactory( factory );
+
+        socket.connectBlocking();
+
+        return socket;
+    }
+
+    private boolean socketAuth(MixSocket socket, String authkey, int channelID, int userID) {
+        JSONObject auth = new JSONObject("{\n" +
+                "  \"type\": \"method\",\n" +
+                "  \"method\": \"auth\",\n" +
+                "  \"arguments\": [" + channelID + ", " + userID +", \"" + authkey + "\"],\n" +
+                "  \"id\": 0\n" +
+                "}");
+        socket.send(auth.toString());
+        return true;
+    }
+
+    private boolean socketDelete(MixSocket socket, String uuid) {
+        JSONObject deleteKey = new JSONObject("{\n" +
+                "  \"type\": \"method\",\n" +
+                "  \"method\": \"deleteMessage\",\n" +
+                "  \"arguments\": [\"" + uuid + "\"],\n" +
+                "  \"id\": 10\n" +
+                "}");
+
+        socket.send(deleteKey.toString());
+
+        return true;
+    }
+    /**
      * Update the chatBox with the new messages.
      *
      * @param text  List of Text objects to be added to chatBox.
      */
-    private void updateText(List<Text> text) {
-        for (Text t : text) {
+    private void updateText(List<MixMessage> text) {
+        for (MixMessage t : text) {
             chatBox.getChildren().add(t);
         }
         chatBox.getChildren().add(new Text(System.lineSeparator()));
