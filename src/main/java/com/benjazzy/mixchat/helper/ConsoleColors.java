@@ -1,4 +1,4 @@
-package com.benjazzy.mixchat;
+package com.benjazzy.mixchat.helper;
 
 public class ConsoleColors {
     // Reset

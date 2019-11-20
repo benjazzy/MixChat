@@ -1,4 +1,4 @@
-package com.benjazzy.mixchat;
+package com.benjazzy.mixchat.oauth;
 
 import java.io.File;
 import java.io.IOException;

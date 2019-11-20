@@ -12,7 +12,7 @@
  * the License.
  */
 
-package com.benjazzy.mixchat;
+package com.benjazzy.mixchat.oauth;
 
 /**
  * Contains the Oauth2 credentials.

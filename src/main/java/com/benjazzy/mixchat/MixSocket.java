@@ -16,7 +16,6 @@ public class MixSocket extends WebSocketClient {
 
     @Override
     public void onOpen(ServerHandshake serverHandshake) {
-        System.out.println("Connected");
     }
 
     @Override
@@ -27,7 +26,6 @@ public class MixSocket extends WebSocketClient {
 
     @Override
     public void onClose(int i, String s, boolean b) {
-        System.out.println( "Disconnected" );
     }
 
     @Override

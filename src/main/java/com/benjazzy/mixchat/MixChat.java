@@ -4,11 +4,9 @@ package com.benjazzy.mixchat;
  * Hello world!
  */
 
-import com.google.api.client.json.Json;
-import com.google.common.util.concurrent.*;
-import com.google.gson.JsonObject;
+import com.benjazzy.mixchat.helper.ConsoleColors;
+import com.benjazzy.mixchat.oauth.MixOauth;
 import com.mixer.api.MixerAPI;
-import com.mixer.api.http.MixerHttpClient;
 import com.mixer.api.resource.MixerUser;
 import com.mixer.api.resource.channel.MixerChannel;
 import com.mixer.api.resource.chat.MixerChat;
@@ -16,7 +14,6 @@ import com.mixer.api.resource.chat.events.DeleteMessageEvent;
 import com.mixer.api.resource.chat.events.IncomingMessageEvent;
 import com.mixer.api.resource.chat.events.UserJoinEvent;
 import com.mixer.api.resource.chat.events.UserLeaveEvent;
-import com.mixer.api.resource.chat.events.data.DeleteMessageData;
 import com.mixer.api.resource.chat.events.data.IncomingMessageData;
 import com.mixer.api.resource.chat.events.data.MessageComponent.MessageTextComponent;
 import com.mixer.api.resource.chat.methods.AuthenticateMessage;
@@ -36,24 +33,19 @@ import javafx.scene.layout.Pane;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Text;
 import javafx.scene.text.TextFlow;
-import jdk.nashorn.internal.parser.JSONParser;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
 import javax.annotation.Nullable;
-import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSocketFactory;
-import javax.net.ssl.TrustManagerFactory;
 import java.io.*;
 import java.net.*;
 import java.security.KeyManagementException;
-import java.security.KeyStore;
 import java.security.NoSuchAlgorithmException;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Executors;
 
 /**
  * The MixChat class handles communcation with the Mixer API
@@ -64,7 +56,9 @@ public class MixChat {
 
     private boolean connected = false;                      /** The connected variable is used to store whether the chat is connected. */
     private String token = "";                              /** The token variable is used to store the Oauth2 token. */
+    private String mixerUsername = "";                      /** Username of the currently connected user. */
     private int chatId = 0;                                 /** ChatId stores the id of the currently connected chat. */
+    private int userId = 0;                                 /** UserId stores the id of the current user. */
     private List<MixChatUser> users = new LinkedList<>();   /** Users stores a list of users currently connected to the chat. */
 
     private TextFlow chatBox;                               /** ChatBox is the TextFlow where the chat is displayed. */
@@ -79,6 +73,7 @@ public class MixChat {
     private MixerAPI mixer;                         /** Mixer stores the main MixerAPI object */
     private MixerChatConnectable chatConnectable;   /** ChatConnectable is used interface with the connected chat. */
     private MixSocket socket;                       /** Used to manually interface with the Mixer API */
+
     /**
      * The constructor links the javafx variables to their Panes.
      * @param root  Root javafx Pane of the application.
@@ -134,11 +129,12 @@ public class MixChat {
         MixerChat chat = mixer.use(ChatService.class).findOne(id).get();
         MixerChannel channel = mixer.use(ChannelsService.class).findOneByToken(chatName).get();
 
-        System.out.println(user.id);
+        mixerUsername = user.username;
+        userId = user.id;
+
 
         /** Set chatConnectable to use the current chat. */
         chatConnectable = chat.connectable(mixer);
-
         /**
          * Authenticate with mixer.
          * If sucsesfully authenticated to the chat then:
@@ -198,7 +194,7 @@ public class MixChat {
      */
     public List<MixMessage> formatChatBox(IncomingMessageEvent event) {
         List<MixMessage> textList = new ArrayList<>();                            /** List of Text objects to be returned. */
-        MixMessage username = new MixMessage(event.data.userName, event.data.id); /** Username of the user that sent the message. */
+        MixMessage username = new MixMessage(event.data.userName, event.data.id, event.data.userName); /** Username of the user that sent the message. */
         List<MixMessage> message = new LinkedList<>();                            /** List of message elements from event. */
 
         /**
@@ -206,7 +202,7 @@ public class MixChat {
          */
         SimpleDateFormat formatter = new SimpleDateFormat("HH:mm:ss");
         Date date = new Date();
-        MixMessage dateText = new MixMessage(formatter.format(date), event.data.id);
+        MixMessage dateText = new MixMessage(formatter.format(date), event.data.id, event.data.userName);
 
         /**
          * Iterates the message elements and adds them to the message list.
@@ -214,7 +210,7 @@ public class MixChat {
          * an underline if so.
          */
         for (MessageTextComponent i : event.data.message.message) {
-            MixMessage m = new MixMessage(i.text, event.data.id);
+            MixMessage m = new MixMessage(i.text, event.data.id, event.data.userName);
             if (m.getText().contains("\u0040")) {
                 m.setFill(Color.BLUE);
                 m.setUnderline(true);
@@ -273,9 +269,9 @@ public class MixChat {
          */
         for (IncomingMessageData messageEvent : event.messages) {
             /** Add a new line to the beginning to separate it from the previous line. */
-            textList.add(new MixMessage(System.lineSeparator(), messageEvent.id));
+            textList.add(new MixMessage(System.lineSeparator(), messageEvent.id, messageEvent.userName));
             /** Gets the username from messageEvent. */
-            MixMessage username = new MixMessage(messageEvent.userName, messageEvent.id);
+            MixMessage username = new MixMessage(messageEvent.userName, messageEvent.id, messageEvent.userName);
             /** List of message elements from event. */
             List<MixMessage> message = new LinkedList<>();
 
@@ -283,7 +279,7 @@ public class MixChat {
              * Iterate through message elements and add them to the message text.
              */
             for (MessageTextComponent i : messageEvent.message.message) {
-                MixMessage m = new MixMessage(i.text, messageEvent.id);
+                MixMessage m = new MixMessage(i.text, messageEvent.id, messageEvent.userName);
                 if (m.getText().contains("\u0040")) {
                     m.setFill(Color.BLUE);
                     m.setUnderline(true);
@@ -512,12 +508,6 @@ public class MixChat {
      */
     public void deleteMessage(String uuid) {
         try {
-            /**
-             * Get the id of the user that we are going to connect as.
-             */
-            JSONObject user = new JSONObject(getHTML("https://mixer.com/api/v1/channels/" + chatId));
-            int userID = user.getJSONObject("user").getInt("id");
-
             URL url = new URL("https://mixer.com/api/v1/chats/" + chatId);      /** The url of the chat endpoint. */
             String authkey = getAuthkey(url);                                      /** Get the authkey to be used to authenticate with the API. */
 
@@ -540,16 +530,18 @@ public class MixChat {
                     }
                 }
             });
-            socketAuth(socket, authkey, chatId, userID);    /** Authenticate with the API and delete the message if successful. */
+            socketAuth(socket, authkey, chatId, userId);    /** Authenticate with the API and delete the message if successful. */
         } catch (Exception e) {
             e.printStackTrace();
         }
-
     }
 
     private String getAuthkey(URL url) throws IOException {
-        MixOauth oauth = new MixOauth();
+        MixOauth oauth = new MixOauth();                                    /** Get a hold of the Oauth token. */
 
+        /**
+         * Make http GET request to url and read it into response.
+         */
         // Sending get request
         HttpURLConnection conn = (HttpURLConnection) url.openConnection();
 
@@ -570,14 +562,20 @@ public class MixChat {
 
         in.close();
 
+        /**
+         * Parse response as json and return authkey key.
+         */
         JSONObject obj = new JSONObject(response.toString());
         String authkey = obj.getString("authkey");
         return authkey;
     }
 
     private String getEndpoints(URL url) throws IOException {
-        MixOauth oauth = new MixOauth();
+        MixOauth oauth = new MixOauth();                    /** Get a hold of the Oauth token. */
 
+        /**
+         * Make http GET request to url and read it into response.
+         */
         // Sending get request
         HttpURLConnection conn = (HttpURLConnection) url.openConnection();
 
@@ -598,14 +596,20 @@ public class MixChat {
 
         in.close();
 
+        /**
+         * Parse response as json and return first element in endpoints array.
+         */
         JSONObject obj = new JSONObject(response.toString());
         JSONArray array = obj.getJSONArray("endpoints");
         return array.getString(0);
     }
 
     private MixSocket getSocket(URL url, MixSocketReply reply) throws KeyManagementException, NoSuchAlgorithmException, IOException, URISyntaxException, InterruptedException {
-        MixSocket socket = new MixSocket(new URI(getEndpoints(url)), reply);
+        MixSocket socket = new MixSocket(new URI(getEndpoints(url)), reply);    /** Create new MixSocket using url and MixSocketReply reply. */
 
+        /**
+         * Setup Socket to user ssl.
+         */
         SSLContext sslContext = null;
         sslContext = SSLContext.getInstance( "TLS" );
         sslContext.init( null, null, null );
@@ -614,12 +618,15 @@ public class MixChat {
 
         socket.setSocketFactory( factory );
 
-        socket.connectBlocking();
+        socket.connectBlocking();   /** Connect to socket and block until connected. */
 
         return socket;
     }
 
     private boolean socketAuth(MixSocket socket, String authkey, int channelID, int userID) {
+        /**
+         * Format json request int JSONObject
+         */
         JSONObject auth = new JSONObject("{\n" +
                 "  \"type\": \"method\",\n" +
                 "  \"method\": \"auth\",\n" +
@@ -674,32 +681,46 @@ public class MixChat {
          * For each user in users add that user to their primary list
          */
         for (MixChatUser u : users) {
-            if (u.getPrimaryRole() == MixerUser.Role.OWNER) {
-                owner = new Text(u.getUserName());
-            } else if (u.getPrimaryRole() == MixerUser.Role.FOUNDER) {
-                Text t = new Text(u.getUserName());
-                t.setFill(Color.RED);
-                founder.add(t);
-            } else if (u.getPrimaryRole() == MixerUser.Role.STAFF) {
-                Text t = new Text(u.getUserName());
-                t.setFill(Color.YELLOW);
-                staff.add(t);
-            } else if (u.getPrimaryRole() == MixerUser.Role.GLOBAL_MOD) {
-                Text t = new Text(u.getUserName());
-                t.setFill(Color.TEAL);
-                globalMod.add(t);
-            } else if (u.getPrimaryRole() == MixerUser.Role.PRO) {
-                Text t = new Text(u.getUserName());
-                t.setFill(Color.DEEPPINK);
-                pro.add(t);
-            } else if (u.getPrimaryRole() == MixerUser.Role.MOD) {
-                Text t = new Text(u.getUserName());
-                t.setFill(Color.GREEN);
-                mod.add(t);
-            } else if (u.getPrimaryRole() == MixerUser.Role.USER) {
-                Text t = new Text(u.getUserName());
-                t.setFill(Color.SKYBLUE);
-                user.add(t);
+            switch (u.getPrimaryRole()) {
+                case OWNER:
+                    owner = new Text(u.getUserName());
+                    break;
+                case FOUNDER: {
+                    Text t = new Text(u.getUserName());
+                    t.setFill(Color.RED);
+                    founder.add(t);
+                    break;
+                }
+                case STAFF: {
+                    Text t = new Text(u.getUserName());
+                    t.setFill(Color.YELLOW);
+                    staff.add(t);
+                    break;
+                }
+                case GLOBAL_MOD: {
+                    Text t = new Text(u.getUserName());
+                    t.setFill(Color.TEAL);
+                    globalMod.add(t);
+                    break;
+                }
+                case PRO: {
+                    Text t = new Text(u.getUserName());
+                    t.setFill(Color.DEEPPINK);
+                    pro.add(t);
+                    break;
+                }
+                case MOD: {
+                    Text t = new Text(u.getUserName());
+                    t.setFill(Color.GREEN);
+                    mod.add(t);
+                    break;
+                }
+                case USER: {
+                    Text t = new Text(u.getUserName());
+                    t.setFill(Color.SKYBLUE);
+                    user.add(t);
+                    break;
+                }
             }
         }
 
@@ -864,4 +885,8 @@ public class MixChat {
 	public boolean isConnected() {
 		return connected;
 	}
+
+	public String getMixerUsername() {
+	    return mixerUsername;
+    }
 }
