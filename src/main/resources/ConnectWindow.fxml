@@ -10,8 +10,8 @@
    <children>
       <Pane prefHeight="98.0" prefWidth="200.0">
          <children>
-            <TextArea editable="false" prefHeight="38.0" prefWidth="200.0" text="Enter channel name" />
-            <TextField fx:id="connectWindowField" layoutX="-1.0" layoutY="41.0" prefHeight="26.0" prefWidth="200.0" />
+            <TextArea editable="false" mouseTransparent="true" prefHeight="38.0" prefWidth="200.0" text="Enter channel name" />
+            <TextField fx:id="connectWindowField" layoutX="-1.0" layoutY="41.0" onKeyPressed="#handleConnectEnter" prefHeight="26.0" prefWidth="200.0" />
             <Button fx:id="connectWindowDone" layoutX="74.0" layoutY="67.0" mnemonicParsing="false" onAction="#ConnectWindowDone" text="Done" />
          </children>
       </Pane>

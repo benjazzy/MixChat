@@ -4,11 +4,12 @@ import javafx.event.EventHandler;
 import javafx.scene.Node;
 import javafx.scene.control.ContextMenu;
 import javafx.scene.control.MenuItem;
+import javafx.scene.image.ImageView;
 import javafx.scene.input.ContextMenuEvent;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.text.Text;
 
-public class MixMessage extends Text {
+public class MixMessage extends Text  {
     private String uuid;    /** Message uuid. */
     private String user;    /** User who sent the message. */
 
@@ -24,7 +25,7 @@ public class MixMessage extends Text {
         //if (this.user.equals(MixUI.getInstance().chat.getMixerUsername())) {
             MenuItem delete = new MenuItem("Delete");
             delete.setOnAction(event -> {
-                Thread thread = new Thread(() -> MixUI.getInstance().chat.deleteMessage(uuid));
+                Thread thread = new Thread(() -> MixUI.getInstance().getChat().deleteMessage(uuid));
                 thread.run();
             });
 

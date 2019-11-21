@@ -18,7 +18,7 @@ public class MixUI extends Application {
 
     private static MixUI single_instance = null;
 
-    public MixChat chat;                            /** Handles the Mixer API. */
+    private MixChat chat;                                    /** Handles the Mixer API. */
     private static Pane root;                               /** Root pane of the main menu. */
     /**
      * Set single_instance to itself.
@@ -83,5 +83,9 @@ public class MixUI extends Application {
      */
     public static MixUI getInstance() {
         return single_instance;
+    }
+
+    public MixChat getChat() {
+        return chat;
     }
 }

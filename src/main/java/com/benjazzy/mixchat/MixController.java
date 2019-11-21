@@ -66,7 +66,7 @@ public class MixController {
         String channelName = connectWindowField.getText();
         /** Check if a channel name has been specified. */
         if (channelName != null) {
-            MixUI.getInstance().chat.connect(channelName);
+            MixUI.getInstance().getChat().connect(channelName);
 
             Stage stage = (Stage) connectWindowDone.getScene().getWindow();
             stage.close();
@@ -80,7 +80,7 @@ public class MixController {
      */
     @FXML
     private void Disconnect(ActionEvent event) {
-        MixUI.getInstance().chat.disconnect();
+        MixUI.getInstance().getChat().disconnect();
     }
 
     /**
@@ -91,10 +91,10 @@ public class MixController {
     @FXML
     private void SendMessage(ActionEvent event) {
         String m = message.getText();
-        if (MixUI.getInstance().chat.isConnected()) {
+        if (MixUI.getInstance().getChat().isConnected()) {
 
             message.setText("");
-            MixUI.getInstance().chat.sendMessage(m);
+            MixUI.getInstance().getChat().sendMessage(m);
         } else {
             System.out.println("Error not connected");
         }
@@ -109,15 +109,30 @@ public class MixController {
     private void handleMessageEnter(KeyEvent event) {
         if (event.getCode() == KeyCode.ENTER) {
             String m = message.getText();
-            if (MixUI.getInstance().chat.isConnected()) {
-
+            if (MixUI.getInstance().getChat().isConnected()) {
                 message.setText("");
-                MixUI.getInstance().chat.sendMessage(m);
+                MixUI.getInstance().getChat().sendMessage(m);
             } else {
                 System.out.println("Error not connected");
             }
         }
-
     }
 
+    /**
+     * Called when any key is pressed in the connect window field.  If the key is enter connect to the specified channel.
+     *
+     * @param event
+     */
+    @FXML
+    private void handleConnectEnter(KeyEvent event) {
+        if (event.getCode() == KeyCode.ENTER) {
+            try {
+                ConnectWindowDone(new ActionEvent());
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            } catch (ExecutionException e) {
+                e.printStackTrace();
+            }
+        }
+    }
 }

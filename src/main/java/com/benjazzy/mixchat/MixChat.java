@@ -1,9 +1,5 @@
 package com.benjazzy.mixchat;
 
-/**
- * Hello world!
- */
-
 import com.benjazzy.mixchat.helper.ConsoleColors;
 import com.benjazzy.mixchat.oauth.MixOauth;
 import com.mixer.api.MixerAPI;
@@ -29,6 +25,8 @@ import com.mixer.api.services.impl.UsersService;
 import javafx.application.Platform;
 import javafx.scene.Node;
 import javafx.scene.control.ScrollPane;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
 import javafx.scene.layout.Pane;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Text;
@@ -192,10 +190,10 @@ public class MixChat {
      * @param event     Incoming message event that conains all the data of the message.
      * @return          Returns a list of formated text objects to be displayed in the chatBox.
      */
-    public List<MixMessage> formatChatBox(IncomingMessageEvent event) {
-        List<MixMessage> textList = new ArrayList<>();                            /** List of Text objects to be returned. */
+    public List<Node> formatChatBox(IncomingMessageEvent event) {
+        List<Node> textList = new ArrayList<>();                            /** List of Text objects to be returned. */
         MixMessage username = new MixMessage(event.data.userName, event.data.id, event.data.userName); /** Username of the user that sent the message. */
-        List<MixMessage> message = new LinkedList<>();                            /** List of message elements from event. */
+        List<Node> message = new LinkedList<>();                            /** List of message elements from event. */
 
         /**
          * Formats the current time to be added to textList.
@@ -210,13 +208,21 @@ public class MixChat {
          * an underline if so.
          */
         for (MessageTextComponent i : event.data.message.message) {
-            MixMessage m = new MixMessage(i.text, event.data.id, event.data.userName);
-            if (m.getText().contains("\u0040")) {
-                m.setFill(Color.BLUE);
-                m.setUnderline(true);
+            if (i.url != null) {
+                try {
+                    message.add(new ImageView(new Image(i.url, 50, 50, false, false)));
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
             }
-            message.add(m);
-
+            else {
+                MixMessage m = new MixMessage(i.text, event.data.id, event.data.userName);
+                if (m.getText().contains("\u0040")) {
+                    m.setFill(Color.BLUE);
+                    m.setUnderline(true);
+                }
+                message.add(m);
+            }
         }
 
         /**
@@ -246,11 +252,10 @@ public class MixChat {
          */
         textList.add(dateText);
         textList.add(username);
-        for (MixMessage m : message) {
+        for (Node m : message) {
             textList.add(m);
         }
 
-        System.out.println(event.data.id);
         return textList;
     }
 
@@ -260,9 +265,9 @@ public class MixChat {
      * @param event     Contains all the information on the past messages.
      * @return          Returns a formated list of messages to be displayed in chatBox.
      */
-    public List<MixMessage> formatChatBox(ChatHistoryReply event) {
+    public List<Node> formatChatBox(ChatHistoryReply event) {
         /** List of formatted Text objects to be returned. */
-        List<MixMessage> textList = new ArrayList<>();
+        List<Node> textList = new ArrayList<>();
 
         /**
          * Iterate through each message and format it.
@@ -536,6 +541,13 @@ public class MixChat {
         }
     }
 
+    /**
+     * Get the authkey from the specified endpoint.
+     *
+     * @param url           Url of the endpoint to get the authkey from.  https://mixer.com/api/v1/chats/{chatid}.
+     * @return              Returns the authkey from the endpoint.
+     * @throws IOException
+     */
     private String getAuthkey(URL url) throws IOException {
         MixOauth oauth = new MixOauth();                                    /** Get a hold of the Oauth token. */
 
@@ -570,6 +582,13 @@ public class MixChat {
         return authkey;
     }
 
+    /**
+     * Get the websocket endpoint from the specified http endpoint.  https://mixer.com/api/v1/chats/{chatid}.
+     *
+     * @param url           Url of the endpoint to get the websocket endpoint from.
+     * @return              The websocket endpoint from the http endpoint.
+     * @throws IOException
+     */
     private String getEndpoints(URL url) throws IOException {
         MixOauth oauth = new MixOauth();                    /** Get a hold of the Oauth token. */
 
@@ -604,6 +623,18 @@ public class MixChat {
         return array.getString(0);
     }
 
+    /**
+     * Gets a new ssl websocket
+     *
+     * @param url       Websocket endpoint and port to connect to.
+     * @param reply     MixSocketReply to reply to.
+     * @return          Returns a MixSocket that can send messages to the Mixer API.
+     * @throws KeyManagementException
+     * @throws NoSuchAlgorithmException
+     * @throws IOException
+     * @throws URISyntaxException
+     * @throws InterruptedException
+     */
     private MixSocket getSocket(URL url, MixSocketReply reply) throws KeyManagementException, NoSuchAlgorithmException, IOException, URISyntaxException, InterruptedException {
         MixSocket socket = new MixSocket(new URI(getEndpoints(url)), reply);    /** Create new MixSocket using url and MixSocketReply reply. */
 
@@ -623,7 +654,15 @@ public class MixChat {
         return socket;
     }
 
-    private boolean socketAuth(MixSocket socket, String authkey, int channelID, int userID) {
+    /**
+     * Send the auth message to specified websocket.
+     *
+     * @param socket        Websocket to send the auth message over.
+     * @param authkey       Authkey from getAuthkey() to pass with auth message.
+     * @param channelID     ID of the channel to authenticate with.
+     * @param userID        ID of the user to authenticate as.
+     */
+    private void socketAuth(MixSocket socket, String authkey, int channelID, int userID) {
         /**
          * Format json request int JSONObject
          */
@@ -634,10 +673,15 @@ public class MixChat {
                 "  \"id\": 0\n" +
                 "}");
         socket.send(auth.toString());
-        return true;
     }
 
-    private boolean socketDelete(MixSocket socket, String uuid) {
+    /**
+     * Send the delete message message over the websocket.  Must send the auth message first.
+     *
+     * @param socket    Websocket to send the delete message over.
+     * @param uuid      UUID of the message to be deleted.
+     */
+    private void socketDelete(MixSocket socket, String uuid) {
         JSONObject deleteKey = new JSONObject("{\n" +
                 "  \"type\": \"method\",\n" +
                 "  \"method\": \"deleteMessage\",\n" +
@@ -646,16 +690,15 @@ public class MixChat {
                 "}");
 
         socket.send(deleteKey.toString());
-
-        return true;
     }
+
     /**
      * Update the chatBox with the new messages.
      *
      * @param text  List of Text objects to be added to chatBox.
      */
-    private void updateText(List<MixMessage> text) {
-        for (MixMessage t : text) {
+    private void updateText(List<Node> text) {
+        for (Node t : text) {
             chatBox.getChildren().add(t);
         }
         chatBox.getChildren().add(new Text(System.lineSeparator()));
