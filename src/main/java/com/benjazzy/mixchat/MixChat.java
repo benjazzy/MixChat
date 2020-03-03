@@ -78,12 +78,6 @@ public class MixChat {
      */
     MixChat(Pane root) {
         System.out.println("Setting chatBox");
-        chatBox = (TextFlow) root.lookup("#ChatBox");
-        userList = (TextFlow) root.lookup("#UserList");
-        chatScrollPane = (ScrollPane) root.lookup("#ChatScrollPane");
-
-        /** Sets chatScrollPane to always scroll to the bottom */
-        chatScrollPane.vvalueProperty().bind(chatBox.heightProperty());
     }
 
     /**

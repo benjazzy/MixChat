@@ -4,9 +4,7 @@ import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
-import javafx.scene.control.Button;
-import javafx.scene.control.MenuItem;
-import javafx.scene.control.TextField;
+import javafx.scene.control.*;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.Pane;
@@ -28,6 +26,10 @@ public class MixController {
     private TextField message;              /** TextField containing the message the user wants to send. */
     @FXML
     private Button sendMessage;             /** Button to send message. */
+    @FXML
+    private Button connect;
+    @FXML
+    private TabPane connections;
 
     /**
      * Opens the connect menu.
@@ -66,6 +68,20 @@ public class MixController {
         String channelName = connectWindowField.getText();
         /** Check if a channel name has been specified. */
         if (channelName != null) {
+            Tab chat = new Tab(channelName);
+            System.out.println(connections.getTabs());
+            connections.getTabs().add(chat);
+
+            Pane root;
+            FXMLLoader loader = new FXMLLoader();
+            // Path to the FXML File
+            loader.setLocation(getClass().getResource("/MixChatWindow.fxml"));
+            try {
+                root = loader.load();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
             MixUI.getInstance().getChat().connect(channelName);
 
             Stage stage = (Stage) connectWindowDone.getScene().getWindow();
