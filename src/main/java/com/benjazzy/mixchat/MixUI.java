@@ -10,6 +10,8 @@ import javafx.stage.Stage;
 import javafx.stage.WindowEvent;
 
 import java.io.IOException;
+import java.util.LinkedList;
+import java.util.List;
 
 /**
  * Used to control the javafx ui and holds the instance of MixChat.
@@ -18,6 +20,7 @@ public class MixUI extends Application {
 
     private static MixUI single_instance = null;
 
+    private List<MixChat> chats = new LinkedList();
     private MixChat chat;                                    /** Handles the Mixer API. */
     private static Pane root;                               /** Root pane of the main menu. */
     /**

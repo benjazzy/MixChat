@@ -1,5 +1,6 @@
-package com.benjazzy.mixchat;
+package com.benjazzy.mixchat.controller;
 
+import com.benjazzy.mixchat.MixUI;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -16,12 +17,10 @@ import java.util.concurrent.ExecutionException;
  * Controller class for the main UI and chat connect UI.
  */
 public class MixController {
+    private ConnectController connectController;
+
     @FXML
     private MenuItem connectMenu;           /** Menu item that contains the connect and disconect items. */
-    @FXML
-    private TextField connectWindowField;   /** TextField containing the name of the channel to connect to. */
-    @FXML
-    private Button connectWindowDone;       /** Button to connect to chat specified in connectWindowField. */
     @FXML
     private TextField message;              /** TextField containing the message the user wants to send. */
     @FXML
@@ -30,6 +29,16 @@ public class MixController {
     private Button connect;
     @FXML
     private TabPane connections;
+
+    /**
+     * Sets this instance of ConnectController.
+     *
+     * @param controller
+     */
+    public void setConnectController(ConnectController controller)
+    {
+        this.connectController = controller;
+    }
 
     /**
      * Opens the connect menu.
@@ -50,6 +59,10 @@ public class MixController {
             stage.setTitle("Connect");
             stage.setScene(new Scene(root));
             stage.show();
+
+            // Pass this instance of MixController to the ConnectController.
+            setConnectController(loader.getController());
+            connectController.setMixController(this);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -58,19 +71,16 @@ public class MixController {
     /**
      * Connect to the chat in connectWindowField.
      *
-     * @param event
+     * @param channelName
      * @throws InterruptedException
      * @throws ExecutionException
      */
-    @FXML
-    private void ConnectWindowDone(ActionEvent event) throws InterruptedException, ExecutionException {
-
-        String channelName = connectWindowField.getText();
+    public void Connect(String channelName) throws InterruptedException, ExecutionException {
         /** Check if a channel name has been specified. */
         if (channelName != null) {
             Tab chat = new Tab(channelName);
             System.out.println(connections.getTabs());
-            connections.getTabs().add(chat);
+            connections.getTabs().add(0, chat);
 
             Pane root;
             FXMLLoader loader = new FXMLLoader();
@@ -83,9 +93,6 @@ public class MixController {
             }
 
             MixUI.getInstance().getChat().connect(channelName);
-
-            Stage stage = (Stage) connectWindowDone.getScene().getWindow();
-            stage.close();
         }
     }
 
@@ -130,24 +137,6 @@ public class MixController {
                 MixUI.getInstance().getChat().sendMessage(m);
             } else {
                 System.out.println("Error not connected");
-            }
-        }
-    }
-
-    /**
-     * Called when any key is pressed in the connect window field.  If the key is enter connect to the specified channel.
-     *
-     * @param event
-     */
-    @FXML
-    private void handleConnectEnter(KeyEvent event) {
-        if (event.getCode() == KeyCode.ENTER) {
-            try {
-                ConnectWindowDone(new ActionEvent());
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            } catch (ExecutionException e) {
-                e.printStackTrace();
             }
         }
     }
