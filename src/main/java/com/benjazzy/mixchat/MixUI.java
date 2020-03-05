@@ -12,6 +12,7 @@ import javafx.stage.WindowEvent;
 import java.io.IOException;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 
 /**
  * Used to control the javafx ui and holds the instance of MixChat.
@@ -77,6 +78,19 @@ public class MixUI extends Application {
          * Creates a new MixChat object and gives it the root pane.
          */
         chat = new MixChat(root);
+    }
+
+    public void addNewChat(String channelName, Pane root)
+    {
+        MixChat chat = new MixChat(root);
+        try {
+            chat.connect(channelName);
+            chats.add(chat);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        } catch (ExecutionException e) {
+            e.printStackTrace();
+        }
     }
 
     /**

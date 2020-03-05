@@ -59,7 +59,7 @@ public class ConnectController {
      * @param event
      */
     @FXML
-    private void handleConnectEnter(KeyEvent event) {/*
+    private void handleConnectEnter(KeyEvent event) {
         if (event.getCode() == KeyCode.ENTER) {
             try {
                 ConnectWindowDone(new ActionEvent());
@@ -69,5 +69,5 @@ public class ConnectController {
                 e.printStackTrace();
             }
         }
-    */}
+    }
 }

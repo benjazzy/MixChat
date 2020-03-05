@@ -74,9 +74,10 @@ public class MixChat {
 
     /**
      * The constructor links the javafx variables to their Panes.
+     *
      * @param root  Root javafx Pane of the application.
      */
-    MixChat(Pane root) {
+    public MixChat(Pane root) {
         System.out.println("Setting chatBox");
     }
 
