@@ -70,7 +70,6 @@ public class MixController {
      */
     @FXML
     private void Disconnect(ActionEvent event) {
-        MixUI.getInstance().getChat().disconnect();
     }
 
     /**
@@ -93,15 +92,10 @@ public class MixController {
             loader.setLocation(getClass().getResource("/MixChatWindow.fxml"));
             try {
                 root = loader.load();
-
-                MixChat mixChat = new MixChat(root);
-
                 ChatController chatController = loader.getController();
-                chatController.setMixChat(mixChat);
+                chatController.Connect(channelName);
 
                 chat.setContent(root);
-
-                mixChat.connect(channelName);
             } catch (IOException e) {
                 e.printStackTrace();
             }

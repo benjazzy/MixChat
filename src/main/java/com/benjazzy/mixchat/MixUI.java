@@ -77,20 +77,7 @@ public class MixUI extends Application {
         /**
          * Creates a new MixChat object and gives it the root pane.
          */
-        chat = new MixChat(root);
-    }
-
-    public void addNewChat(String channelName, Pane root)
-    {
-        MixChat chat = new MixChat(root);
-        try {
-            chat.connect(channelName);
-            chats.add(chat);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        } catch (ExecutionException e) {
-            e.printStackTrace();
-        }
+        //chat = new MixChat(root);
     }
 
     /**
