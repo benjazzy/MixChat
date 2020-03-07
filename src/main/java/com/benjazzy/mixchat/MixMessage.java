@@ -1,5 +1,6 @@
 package com.benjazzy.mixchat;
 
+import com.benjazzy.mixchat.controller.MixController;
 import javafx.event.EventHandler;
 import javafx.scene.Node;
 import javafx.scene.control.ContextMenu;
@@ -19,18 +20,19 @@ public class MixMessage extends Text  {
         this.user = user;
 
         /**
-         * Add delete option to context menu if you are the owner of the message or a moderator.
+         * Add delete option to context menu.
          */
         ContextMenu menu = new ContextMenu();
-        //if (this.user.equals(MixUI.getInstance().chat.getMixerUsername())) {
-            MenuItem delete = new MenuItem("Delete");
-            delete.setOnAction(event -> {
-                Thread thread = new Thread(() -> MixUI.getInstance().getChat().deleteMessage(uuid));
-                thread.run();
+        MenuItem delete = new MenuItem("Delete");
+        delete.setOnAction(event -> {
+            Thread thread = new Thread(() -> {
+                MixController controller = MixUI.getInstance().getLoader().getController();
+                controller.DeleteMessage(uuid);
             });
+            thread.run();
+        });
 
             menu.getItems().addAll(delete);
-        //}
 
         this.setOnContextMenuRequested(new EventHandler<ContextMenuEvent>() {
             @Override
