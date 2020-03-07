@@ -54,9 +54,17 @@ public class ChatController {
         }
     }
 
+    /**
+     * Tells the MixChat to disconnect.
+     */
     public void Disconnect()
     {
         mixChat.disconnect();
+    }
+
+    public void DeleteMessage(String uuid)
+    {
+        mixChat.deleteMessage(uuid);
     }
 
     /**

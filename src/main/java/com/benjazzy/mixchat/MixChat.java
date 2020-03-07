@@ -75,14 +75,12 @@ public class MixChat {
     /**
      * The constructor links the javafx variables to their Panes.
      *
-     * @param root  Root javafx Pane of the application.
+     * @param chat
+     * @param users
+     * @param chatPane
      */
     public MixChat(TextFlow chat, TextFlow users, ScrollPane chatPane) {
         System.out.println("Setting chatBox");
-        /*chatBox = (TextFlow) root.lookup("#ChatBox");
-        userList = (TextFlow) root.lookup("#UserList");
-        chatScrollPane = (ScrollPane) root.lookup("#ChatScrollPane");
-        */
         chatBox = chat;
         userList = users;
         chatScrollPane = chatPane;
@@ -444,10 +442,8 @@ public class MixChat {
         /**
          * Put all the elements together.
          */
-        String output = String.format("%s %s%s%s: %s", formatter.format(date), usernameFormat, username,
+        return String.format("%s %s%s%s: %s", formatter.format(date), usernameFormat, username,
                 ConsoleColors.RESET, message);
-        return output;
-
     }
 
     /**

@@ -1,18 +1,16 @@
 package com.benjazzy.mixchat;
 
+import com.benjazzy.mixchat.controller.MixController;
 import javafx.application.Application;
 import javafx.application.Platform;
-import javafx.event.EventHandler;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
 import javafx.scene.layout.Pane;
 import javafx.stage.Stage;
-import javafx.stage.WindowEvent;
 
 import java.io.IOException;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.concurrent.ExecutionException;
 
 /**
  * Used to control the javafx ui and holds the instance of MixChat.
@@ -22,8 +20,10 @@ public class MixUI extends Application {
     private static MixUI single_instance = null;
 
     private List<MixChat> chats = new LinkedList();
-    private MixChat chat;                                    /** Handles the Mixer API. */
+    private MixChat chat;                                   /** Handles the Mixer API. */
     private static Pane root;                               /** Root pane of the main menu. */
+    private FXMLLoader loader;                              /** FXML loader of the root Pane. */
+
     /**
      * Set single_instance to itself.
      */
@@ -47,7 +47,7 @@ public class MixUI extends Application {
         /**
          * Loads the javafx configuration from the resources/MixChat.fxml.
          */
-        FXMLLoader loader = new FXMLLoader();
+        loader = new FXMLLoader();
         loader.setLocation(getClass().getResource("/MixChat.fxml"));
 
         // Create the Pane and all Details
@@ -65,19 +65,15 @@ public class MixUI extends Application {
         /**
          * Setup the program to disconnect from the Mixer API and close on exit.
          */
-        stage.setOnCloseRequest(new EventHandler<WindowEvent>() {
-            @Override
-            public void handle(WindowEvent t) {
-                chat.disconnect();
-                Platform.exit();
-                System.exit(0);
+        stage.setOnCloseRequest(t -> {
+            if (loader != null)
+            {
+                MixController controller = loader.getController();
+                controller.DisconnectAllTabs();
             }
+            Platform.exit();
+            System.exit(0);
         });
-
-        /**
-         * Creates a new MixChat object and gives it the root pane.
-         */
-        //chat = new MixChat(root);
     }
 
     /**
@@ -89,7 +85,8 @@ public class MixUI extends Application {
         return single_instance;
     }
 
-    public MixChat getChat() {
-        return chat;
+    public FXMLLoader getLoader()
+    {
+        return loader;
     }
 }
