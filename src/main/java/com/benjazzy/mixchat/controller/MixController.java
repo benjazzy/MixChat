@@ -8,6 +8,7 @@ import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
+import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.Pane;
 import javafx.stage.Stage;
 import java.io.IOException;
@@ -31,18 +32,18 @@ public class MixController {
      *
      * @param controller
      */
-    public void SetConnectController(ConnectController controller)
+    public void setConnectController(ConnectController controller)
     {
         this.connectController = controller;
     }
 
-    public void DeleteMessage(String uuid)
+    public void deleteMessage(String uuid)
     {
         for (Tab tab : connections.getTabs())
         {
             if (tab != AddTab)
             {
-                GetChatController(tab).DeleteMessage(uuid);
+                getChatController(tab).deleteMessage(uuid);
             }
         }
     }
@@ -50,13 +51,13 @@ public class MixController {
     /**
      * Disconnects all open tabs.
      */
-    public void DisconnectAllTabs()
+    public void disconnectAllTabs()
     {
         for (Tab tab : connections.getTabs())
         {
             if (tab != AddTab)
             {
-                GetChatController(tab).Disconnect();
+                getChatController(tab).disconnect();
             }
         }
     }
@@ -66,7 +67,7 @@ public class MixController {
      *
      * @param tab
      */
-    private void CloseTab(Tab tab) {
+    private void closeTab(Tab tab) {
         if (tab != AddTab)
         {
             EventHandler<Event> handler = tab.getOnClosed();
@@ -84,7 +85,7 @@ public class MixController {
      * @param tab
      * @return
      */
-    private ChatController GetChatController(Tab tab)
+    private ChatController getChatController(Tab tab)
     {
         Scene scene = tab.getContent().getScene();
         FXMLLoader loader = (FXMLLoader)scene.getUserData();
@@ -112,7 +113,7 @@ public class MixController {
             stage.show();
 
             // Pass this instance of MixController to the ConnectController.
-            SetConnectController(loader.getController());
+            setConnectController(loader.getController());
             connectController.setMixController(this);
         } catch (IOException e) {
             e.printStackTrace();
@@ -127,8 +128,8 @@ public class MixController {
     @FXML
     private void Disconnect(ActionEvent event) {
         Tab tab = connections.getSelectionModel().getSelectedItem();
-        GetChatController(tab).Disconnect();
-        CloseTab(tab);
+        getChatController(tab).disconnect();
+        closeTab(tab);
     }
 
     /**
@@ -153,14 +154,23 @@ public class MixController {
             try {
                 root = loader.load();
                 ChatController chatController = loader.getController();
-                chatController.Connect(channelName);
+                Thread thread = new Thread(() -> {
+                    chatController.connect(channelName);
+                });
+                thread.start();
 
                 Platform.runLater(() -> {
                     Scene scene = root.getScene();
                     scene.setUserData(loader);
                 });
+                AnchorPane anchorPane = new AnchorPane();
+                AnchorPane.setTopAnchor(root, 0.0);
+                AnchorPane.setBottomAnchor(root, 0.0);
+                AnchorPane.setLeftAnchor(root, 0.0);
+                AnchorPane.setRightAnchor(root, 0.0);
+                anchorPane.getChildren().add(root);
 
-                chat.setContent(root);
+                chat.setContent(anchorPane);
             } catch (IOException e) {
                 e.printStackTrace();
             }
