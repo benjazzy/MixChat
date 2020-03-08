@@ -27,7 +27,6 @@ import javafx.scene.Node;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
-import javafx.scene.layout.Pane;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Text;
 import javafx.scene.text.TextFlow;
@@ -46,7 +45,7 @@ import java.util.*;
 import java.util.concurrent.ExecutionException;
 
 /**
- * The MixChat class handles communcation with the Mixer API
+ * The MixChat class handles communication with the Mixer API
  * and displays the chat to the terminal and javafx textflow chatBox.
  */
 public class MixChat {
@@ -70,7 +69,7 @@ public class MixChat {
 
     private MixerAPI mixer;                         /** Mixer stores the main MixerAPI object */
     private MixerChatConnectable chatConnectable;   /** ChatConnectable is used interface with the connected chat. */
-    private MixSocket socket;                       /** Used to manually interface with the Mixer API */
+    private MixSocket socket;                       /* Used to manually interface with the Mixer API */
 
     /**
      * The constructor links the javafx variables to their Panes.
@@ -98,7 +97,8 @@ public class MixChat {
      */
     public void connect(String chatName) throws InterruptedException, ExecutionException {
         System.out.println(chatName);
-        chatBox.getChildren().clear();      /** Clears the chat for the next connection. */
+
+        Platform.runLater(() -> chatBox.getChildren().clear());      /** Clears the chat for the next connection. */
 
         /** Gets an Oauth2 access token from MixOauth. */
         MixOauth oauth = new MixOauth();
@@ -138,7 +138,7 @@ public class MixChat {
         chatConnectable = chat.connectable(mixer);
         /**
          * Authenticate with mixer.
-         * If sucsesfully authenticated to the chat then:
+         * If successfully authenticated to the chat then:
          *      Print Connected,
          *      Get message history.
          */
@@ -173,8 +173,8 @@ public class MixChat {
             System.out.println("Failed to connect");
         }
 
-        /** Registers events for incomming messages as well as user join and leave */
-        registerIncommingChat();
+        /** Registers events for incoming messages as well as user join and leave */
+        registerIncomingChat();
     }
 
     /**
@@ -190,8 +190,8 @@ public class MixChat {
     /**
      * Format the text from an incoming message.
      *
-     * @param event     Incoming message event that conains all the data of the message.
-     * @return          Returns a list of formated text objects to be displayed in the chatBox.
+     * @param event     Incoming message event that contains all the data of the message.
+     * @return          Returns a list of formatted text objects to be displayed in the chatBox.
      */
     public List<Node> formatChatBox(IncomingMessageEvent event) {
         List<Node> textList = new ArrayList<>();                            /** List of Text objects to be returned. */
@@ -266,7 +266,7 @@ public class MixChat {
      * Format the messages from previous messages.
      *
      * @param event     Contains all the information on the past messages.
-     * @return          Returns a formated list of messages to be displayed in chatBox.
+     * @return          Returns a formatted list of messages to be displayed in chatBox.
      */
     public List<Node> formatChatBox(ChatHistoryReply event) {
         /** List of formatted Text objects to be returned. */
@@ -458,7 +458,7 @@ public class MixChat {
     /**
      * Register incoming chat messages as well as user join and leave events.
      */
-    public void registerIncommingChat() {
+    public void registerIncomingChat() {
         /** On IncomingMessageEvent update the chatBox and the terminal with the incoming message and update the users in the chat. */
         chatConnectable.on(IncomingMessageEvent.class, mEvent -> {
             Platform.runLater(() -> {
@@ -579,8 +579,7 @@ public class MixChat {
          * Parse response as json and return authkey key.
          */
         JSONObject obj = new JSONObject(response.toString());
-        String authkey = obj.getString("authkey");
-        return authkey;
+        return obj.getString("authkey");
     }
 
     /**
@@ -858,20 +857,28 @@ public class MixChat {
                  * Iterate through list of roles and add them to userRoles.
                  */
                 for (int k = 0; k < roles.length(); k++) {
-                    if (roles.getString(k).equals("Owner")) {
-                        userRoles.add(MixerUser.Role.OWNER);
-                    } else if (roles.getString(k).equals("User")) {
-                        userRoles.add(MixerUser.Role.USER);
-                    } else if (roles.getString(k).equals("Mod")) {
-                        userRoles.add(MixerUser.Role.MOD);
-                    } else if (roles.getString(k).equals("Founder")) {
-                        userRoles.add(MixerUser.Role.FOUNDER);
-                    } else if (roles.getString(k).equals("Pro")) {
-                        userRoles.add(MixerUser.Role.PRO);
-                    } else if (roles.getString(k).equals("Global_mod")) {
-                        userRoles.add(MixerUser.Role.GLOBAL_MOD);
-                    } else if (roles.getString(k).equals("Staff")) {
-                        userRoles.add(MixerUser.Role.STAFF);
+                    switch (roles.getString(k)) {
+                        case "Owner":
+                            userRoles.add(MixerUser.Role.OWNER);
+                            break;
+                        case "User":
+                            userRoles.add(MixerUser.Role.USER);
+                            break;
+                        case "Mod":
+                            userRoles.add(MixerUser.Role.MOD);
+                            break;
+                        case "Founder":
+                            userRoles.add(MixerUser.Role.FOUNDER);
+                            break;
+                        case "Pro":
+                            userRoles.add(MixerUser.Role.PRO);
+                            break;
+                        case "Global_mod":
+                            userRoles.add(MixerUser.Role.GLOBAL_MOD);
+                            break;
+                        case "Staff":
+                            userRoles.add(MixerUser.Role.STAFF);
+                            break;
                     }
                 }
                 /** Add the new user to the list of users. */

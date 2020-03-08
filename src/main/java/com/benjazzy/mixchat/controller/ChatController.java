@@ -41,15 +41,13 @@ public class ChatController {
      *
      * @param name
      */
-    public void Connect(String name)
+    public void connect(String name)
     {
         channelName = name;
         try {
             mixChat = new MixChat(ChatBox, UserList, ChatScrollPane);
             mixChat.connect(channelName);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        } catch (ExecutionException e) {
+        } catch (InterruptedException | ExecutionException e) {
             e.printStackTrace();
         }
     }
@@ -57,12 +55,12 @@ public class ChatController {
     /**
      * Tells the MixChat to disconnect.
      */
-    public void Disconnect()
+    public void disconnect()
     {
         mixChat.disconnect();
     }
 
-    public void DeleteMessage(String uuid)
+    public void deleteMessage(String uuid)
     {
         mixChat.deleteMessage(uuid);
     }

@@ -5,8 +5,6 @@ import javafx.event.EventHandler;
 import javafx.scene.Node;
 import javafx.scene.control.ContextMenu;
 import javafx.scene.control.MenuItem;
-import javafx.scene.image.ImageView;
-import javafx.scene.input.ContextMenuEvent;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.text.Text;
 
@@ -27,19 +25,14 @@ public class MixMessage extends Text  {
         delete.setOnAction(event -> {
             Thread thread = new Thread(() -> {
                 MixController controller = MixUI.getInstance().getLoader().getController();
-                controller.DeleteMessage(uuid);
+                controller.deleteMessage(uuid);
             });
-            thread.run();
+            thread.start();
         });
 
             menu.getItems().addAll(delete);
 
-        this.setOnContextMenuRequested(new EventHandler<ContextMenuEvent>() {
-            @Override
-            public void handle(ContextMenuEvent contextMenuEvent) {
-                menu.show((Node) contextMenuEvent.getSource(), contextMenuEvent.getScreenX(), contextMenuEvent.getScreenY());
-            }
-        });
+        this.setOnContextMenuRequested(contextMenuEvent -> menu.show((Node) contextMenuEvent.getSource(), contextMenuEvent.getScreenX(), contextMenuEvent.getScreenY()));
 
         /**
          * Register click listener.
