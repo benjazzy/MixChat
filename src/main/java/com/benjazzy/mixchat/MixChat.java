@@ -28,6 +28,8 @@ import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TextField;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
+import javafx.scene.image.PixelReader;
+import javafx.scene.image.WritableImage;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Text;
 import javafx.scene.text.TextFlow;
@@ -69,8 +71,8 @@ public class MixChat {
     private ScrollPane chatScrollPane;
 
     private MixerAPI mixer;                         /** Mixer stores the main MixerAPI object */
-    private MixerChatConnectable chatConnectable;   /** ChatConnectable is used interface with the connected chat. */
-    private MixSocket socket;                       /* Used to manually interface with the Mixer API */
+    private MixerChatConnectable chatConnectible;   /** ChatConnectible is used interface with the connected chat. */
+    private MixSocket socket;                       /** Used to manually interface with the Mixer API */
 
     /**
      * The constructor links the javafx variables to their Panes.
@@ -136,23 +138,23 @@ public class MixChat {
 
 
         /** Set chatConnectable to use the current chat. */
-        chatConnectable = chat.connectable(mixer);
+        chatConnectible = chat.connectable(mixer);
         /**
          * Authenticate with mixer.
          * If successfully authenticated to the chat then:
          *      Print Connected,
          *      Get message history.
          */
-        if (chatConnectable.connect()) {
+        if (chatConnectible.connect()) {
 
-            chatConnectable.send(AuthenticateMessage.from(channel, user, chat.authkey),
+            chatConnectible.send(AuthenticateMessage.from(channel, user, chat.authkey),
                     new ReplyHandler<AuthenticationReply>() {
                         public void onSuccess(AuthenticationReply reply) {
                             System.out.println("Connected");
                             connected = true;
 
                             /** Get previous 50 messages and update the terminal and chatBox */
-                            chatConnectable.send(GetHistoryMethod.forCount(50), new ReplyHandler<ChatHistoryReply>() {
+                            chatConnectible.send(GetHistoryMethod.forCount(50), new ReplyHandler<ChatHistoryReply>() {
                                 @Override
                                 public void onSuccess(@Nullable ChatHistoryReply result) {
                                     updateText(formatChatBox(result));
@@ -181,7 +183,7 @@ public class MixChat {
      */
     public void disconnect() {
         if (isConnected()) {
-            chatConnectable.disconnect();
+            chatConnectible.disconnect();
             connected = false;
         }
     }
@@ -216,6 +218,20 @@ public class MixChat {
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
+            }
+            else if (i.type.name().equals("EMOTICON"))
+            {
+                Image image;
+                if (i.source.equals("builtin"))
+                {
+                    image = new Image(String.format("https://mixer.com/_latest/emoticons/%s.png", i.pack));
+                }
+                else
+                {
+                    image = new Image(i.pack);
+                }
+                PixelReader reader = image.getPixelReader();
+                message.add(new ImageView(new WritableImage(reader, i.coords.x, i.coords.y, 24, 24)));
             }
             else {
                 MixMessage m = new MixMessage(i.text, event.data.id, event.data.userName);
@@ -451,7 +467,7 @@ public class MixChat {
      * @param message   The message to be sent.
      */
     public void sendMessage(String message) {
-        chatConnectable.send(ChatSendMethod.of(message));
+        chatConnectible.send(ChatSendMethod.of(message));
     }
 
     /**
@@ -459,22 +475,22 @@ public class MixChat {
      */
     public void registerIncomingChat() {
         /** On IncomingMessageEvent update the chatBox and the terminal with the incoming message and update the users in the chat. */
-        chatConnectable.on(IncomingMessageEvent.class, mEvent -> {
-            updateText(formatChatBox(mEvent));
-            updateUsers(chatId);
+        chatConnectible.on(IncomingMessageEvent.class, mEvent -> {
             String output = formatTerminalChat(mEvent);
             System.out.println(output);
+            updateText(formatChatBox(mEvent));
+            updateUsers(chatId);
         });
         /** On DeleteMessageEvent remove the message from chatBox with the uuid from dEvent */
-        chatConnectable.on(DeleteMessageEvent.class, dEvent -> {
+        chatConnectible.on(DeleteMessageEvent.class, dEvent -> {
             deleteMessage(dEvent);
         });
         /** On UserJoinEvent update the users in chat. */
-        chatConnectable.on(UserJoinEvent.class, jEvent -> {
+        chatConnectible.on(UserJoinEvent.class, jEvent -> {
                 updateUsers(chatId);
         });
         /** On UserLeaveEvent update the users in chat. */
-        chatConnectable.on(UserLeaveEvent.class, lEvent -> {
+        chatConnectible.on(UserLeaveEvent.class, lEvent -> {
                 updateUsers(chatId);
         });
     }
