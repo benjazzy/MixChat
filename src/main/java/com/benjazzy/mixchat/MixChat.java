@@ -97,6 +97,7 @@ public class MixChat {
 
         /** Sets chatScrollPane to always scroll to the bottom */
         chatScrollPane.vvalueProperty().bind(chatBox.heightProperty());
+        chatBox.prefWidthProperty().bind(chatScrollPane.widthProperty());
     }
 
     /**
