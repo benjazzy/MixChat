@@ -767,15 +767,6 @@ public class MixChat {
      */
     private void updateText(List<Node> text) {
         for (Node t : text) {
-            if (t instanceof TextField || t instanceof MixMessage)
-            {
-                if (((Text)t).getText() == null)
-                    System.out.println("Node is null");
-                else if (((Text)t).getText() == "")
-                    System.out.println("Node is empty");
-            }
-            else
-                System.out.println("Node is not a Text");
             Platform.runLater(() -> chatBox.getChildren().add(t));
         }
         Platform.runLater(() -> chatBox.getChildren().add(new Text(System.lineSeparator())));
@@ -823,16 +814,16 @@ public class MixChat {
                     globalMod.add(t);
                     break;
                 }
-                case PRO: {
-                    Text t = new Text(u.getUserName());
-                    t.setFill(Color.DEEPPINK);
-                    pro.add(t);
-                    break;
-                }
                 case MOD: {
                     Text t = new Text(u.getUserName());
                     t.setFill(Color.GREEN);
                     mod.add(t);
+                    break;
+                }
+                case PRO: {
+                    Text t = new Text(u.getUserName());
+                    t.setFill(Color.DEEPPINK);
+                    pro.add(t);
                     break;
                 }
                 case USER: {
@@ -881,18 +872,18 @@ public class MixChat {
                     userList.getChildren().add(new Text(System.lineSeparator()));
                 }
             }
-            if (pro != null && !pro.isEmpty()) {
-                userList.getChildren().add(new Text("PRO"));
-                userList.getChildren().add(new Text(System.lineSeparator()));
-                for (Text u : pro) {
-                    userList.getChildren().add(u);
-                    userList.getChildren().add(new Text(System.lineSeparator()));
-                }
-            }
             if (mod != null && !mod.isEmpty()) {
                 userList.getChildren().add(new Text("MOD"));
                 userList.getChildren().add(new Text(System.lineSeparator()));
                 for (Text u : mod) {
+                    userList.getChildren().add(u);
+                    userList.getChildren().add(new Text(System.lineSeparator()));
+                }
+            }
+            if (pro != null && !pro.isEmpty()) {
+                userList.getChildren().add(new Text("PRO"));
+                userList.getChildren().add(new Text(System.lineSeparator()));
+                for (Text u : pro) {
                     userList.getChildren().add(u);
                     userList.getChildren().add(new Text(System.lineSeparator()));
                 }
@@ -1016,6 +1007,8 @@ public class MixChat {
 
         users.add(user);
 
+        Collections.sort(users, new SortByUserName());
+
         if (updateList)
             updateUserList();
     }
@@ -1076,5 +1069,13 @@ public class MixChat {
 
 	public String getMixerUsername() {
 	    return mixerUsername;
+    }
+}
+
+class SortByUserName implements Comparator<MixChatUser>
+{
+    public int compare(MixChatUser a, MixChatUser b)
+    {
+        return a.getUserName().compareTo(b.getUserName());
     }
 }

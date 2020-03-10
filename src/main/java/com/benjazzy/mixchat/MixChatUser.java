@@ -2,6 +2,7 @@ package com.benjazzy.mixchat;
 
 import com.mixer.api.resource.MixerUser;
 
+import java.util.Comparator;
 import java.util.List;
 
 /**
@@ -41,11 +42,11 @@ public class MixChatUser {
         else if (this.roleList.contains(MixerUser.Role.GLOBAL_MOD)) {
             return MixerUser.Role.GLOBAL_MOD;
         }
-        else if (this.roleList.contains(MixerUser.Role.PRO)) {
-            return MixerUser.Role.PRO;
-        }
         else if (this.roleList.contains(MixerUser.Role.MOD)) {
             return MixerUser.Role.MOD;
+        }
+        else if (this.roleList.contains(MixerUser.Role.PRO)) {
+            return MixerUser.Role.PRO;
         }
         else {
             return MixerUser.Role.USER;
