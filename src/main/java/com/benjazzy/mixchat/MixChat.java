@@ -52,7 +52,9 @@ import java.security.NoSuchAlgorithmException;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 
 /**
  * The MixChat class handles communication with the Mixer API
@@ -68,6 +70,7 @@ public class MixChat {
     private int userId = 0;                                 /** UserId stores the id of the current user. */
     private List<MixChatUser> users = new LinkedList<>();   /** Users stores a list of users currently connected to the chat. */
     private Timer userListTimer = new Timer();
+    private CountDownLatch historyLatch = new CountDownLatch(1);
 
     private TextFlow chatBox;                               /** ChatBox is the TextFlow where the chat is displayed. */
     private TextFlow userList;                              /** UserList is the TextFlow where the list of users from users is displayed. */
@@ -168,6 +171,7 @@ public class MixChat {
                                 public void onSuccess(@Nullable ChatHistoryReply result) {
                                     updateText(formatChatBox(result));
                                     System.out.println(formatTerminalChat(result));
+                                    historyLatch.countDown();
                                 }
                             });
                         }
@@ -176,14 +180,13 @@ public class MixChat {
                             var1.printStackTrace();
                         }
                     });
+            /** Registers events for incoming messages as well as user join and leave */
+            registerIncomingChat();
             /** Updates the list of current viewers. */
-            new Thread(() -> updateUsers(chatId)).start();
+            updateUsers(chatId);
         } else {
             System.out.println("Failed to connect");
         }
-
-        /** Registers events for incoming messages as well as user join and leave */
-        new Thread(() -> registerIncomingChat()).start();
     }
 
     /**
@@ -216,8 +219,6 @@ public class MixChat {
 
         /**
          * Iterates the message elements and adds them to the message list.
-         * Also checks if the message element contains an @ symbol and highlights it blue and adds
-         * an underline if so.
          */
         for (MessageTextComponent i : event.data.message.message)
         {
@@ -383,7 +384,8 @@ public class MixChat {
         // Text.
         else {
             MixMessage m = new MixMessage(textComponent.text, event.id, event.userName);
-            message.add(m);
+            if (!m.getText().contains("�\u200D♂"))
+                message.add(m);
         }
         return message;
     }
@@ -521,6 +523,11 @@ public class MixChat {
     public void registerIncomingChat() {
         /** On IncomingMessageEvent update the chatBox and the terminal with the incoming message and update the users in the chat. */
         chatConnectible.on(IncomingMessageEvent.class, mEvent -> {
+            try {
+                historyLatch.await(5, TimeUnit.SECONDS);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
             String output = formatTerminalChat(mEvent);
             System.out.println(output);
             updateText(formatChatBox(mEvent));
@@ -805,7 +812,7 @@ public class MixChat {
                 }
                 case STAFF: {
                     Text t = new Text(u.getUserName());
-                    t.setFill(Color.YELLOW);
+                    t.setFill(Color.GOLD);
                     staff.add(t);
                     break;
                 }
@@ -914,7 +921,7 @@ public class MixChat {
              */
             //String result = getHTML(String.format("https://mixer.com/api/v1/chats/%d/users", id));
             //JSONArray c = new JSONArray(result);
-            JSONArray c = getUserList(String.format("https://mixer.com/api/v1/chats/%d/users", id));
+            JSONArray c = getUserList(String.format("https://mixer.com/api/v1/chats/%d/users?limit=100", id));
 
             /**
              * Iterate through array of users and add them to the list of users.
