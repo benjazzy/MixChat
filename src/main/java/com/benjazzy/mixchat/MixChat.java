@@ -11,6 +11,7 @@ import com.mixer.api.resource.chat.events.IncomingMessageEvent;
 import com.mixer.api.resource.chat.events.UserJoinEvent;
 import com.mixer.api.resource.chat.events.UserLeaveEvent;
 import com.mixer.api.resource.chat.events.data.IncomingMessageData;
+import com.mixer.api.resource.chat.events.data.MessageComponent;
 import com.mixer.api.resource.chat.events.data.MessageComponent.MessageTextComponent;
 import com.mixer.api.resource.chat.methods.AuthenticateMessage;
 import com.mixer.api.resource.chat.methods.ChatSendMethod;
@@ -22,8 +23,11 @@ import com.mixer.api.resource.chat.ws.MixerChatConnectable;
 import com.mixer.api.services.impl.ChannelsService;
 import com.mixer.api.services.impl.ChatService;
 import com.mixer.api.services.impl.UsersService;
+import com.sun.javafx.application.HostServicesDelegate;
+import javafx.application.HostServices;
 import javafx.application.Platform;
 import javafx.scene.Node;
+import javafx.scene.control.Hyperlink;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TextField;
 import javafx.scene.image.Image;
@@ -34,17 +38,20 @@ import javafx.scene.paint.Color;
 import javafx.scene.text.Text;
 import javafx.scene.text.TextFlow;
 import org.json.JSONArray;
+import org.json.JSONException;
 import org.json.JSONObject;
 
 import javax.annotation.Nullable;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSocketFactory;
+import java.awt.*;
 import java.io.*;
 import java.net.*;
 import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.List;
 import java.util.concurrent.ExecutionException;
 
 /**
@@ -60,6 +67,7 @@ public class MixChat {
     private int chatId = 0;                                 /** ChatId stores the id of the currently connected chat. */
     private int userId = 0;                                 /** UserId stores the id of the current user. */
     private List<MixChatUser> users = new LinkedList<>();   /** Users stores a list of users currently connected to the chat. */
+    private Timer userListTimer = new Timer();
 
     private TextFlow chatBox;                               /** ChatBox is the TextFlow where the chat is displayed. */
     private TextFlow userList;                              /** UserList is the TextFlow where the list of users from users is displayed. */
@@ -167,15 +175,14 @@ public class MixChat {
                             var1.printStackTrace();
                         }
                     });
-            // TODO Check if oddity with user list is due to chat not authenticating yet.
             /** Updates the list of current viewers. */
-            Platform.runLater(() -> {updateUsers(chatId);});
+            new Thread(() -> updateUsers(chatId)).start();
         } else {
             System.out.println("Failed to connect");
         }
 
         /** Registers events for incoming messages as well as user join and leave */
-        registerIncomingChat();
+        new Thread(() -> registerIncomingChat()).start();
     }
 
     /**
@@ -211,36 +218,9 @@ public class MixChat {
          * Also checks if the message element contains an @ symbol and highlights it blue and adds
          * an underline if so.
          */
-        for (MessageTextComponent i : event.data.message.message) {
-            if (i.url != null) {
-                try {
-                    message.add(new ImageView(new Image(i.url, 50, 50, false, false)));
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-            }
-            else if (i.type.name().equals("EMOTICON"))
-            {
-                Image image;
-                if (i.source.equals("builtin"))
-                {
-                    image = new Image(String.format("https://mixer.com/_latest/emoticons/%s.png", i.pack));
-                }
-                else
-                {
-                    image = new Image(i.pack);
-                }
-                PixelReader reader = image.getPixelReader();
-                message.add(new ImageView(new WritableImage(reader, i.coords.x, i.coords.y, 24, 24)));
-            }
-            else {
-                MixMessage m = new MixMessage(i.text, event.data.id, event.data.userName);
-                if (m.getText().contains("\u0040")) {
-                    m.setFill(Color.BLUE);
-                    m.setUnderline(true);
-                }
-                message.add(m);
-            }
+        for (MessageTextComponent i : event.data.message.message)
+        {
+            message.addAll(formatMessageComponent(i, event.data));
         }
 
         /**
@@ -296,19 +276,13 @@ public class MixChat {
             /** Gets the username from messageEvent. */
             MixMessage username = new MixMessage(messageEvent.userName, messageEvent.id, messageEvent.userName);
             /** List of message elements from event. */
-            List<MixMessage> message = new LinkedList<>();
+            List<Node> message = new LinkedList<>();
 
             /**
              * Iterate through message elements and add them to the message text.
              */
             for (MessageTextComponent i : messageEvent.message.message) {
-                MixMessage m = new MixMessage(i.text, messageEvent.id, messageEvent.userName);
-                if (m.getText().contains("\u0040")) {
-                    m.setFill(Color.BLUE);
-                    m.setUnderline(true);
-                }
-                message.add(m);
-
+                message.addAll(formatMessageComponent(i, messageEvent));
             }
 
             /**
@@ -336,11 +310,81 @@ public class MixChat {
              * Adds each element to textList.
              */
             textList.add(username);
-            for (MixMessage m : message) {
+            for (Node m : message) {
                 textList.add(m);
             }
         }
         return textList;
+    }
+
+    /**
+     * Formats the message based on the message type.
+     *
+     * @param textComponent
+     * @param event
+     * @return
+     */
+    private List<Node> formatMessageComponent(MessageTextComponent textComponent, IncomingMessageData event)
+    {
+        List<Node> message = new LinkedList<>();
+
+        // Link.
+        if (textComponent.type.name().equals("LINK"))
+        {
+            Hyperlink m = new Hyperlink(textComponent.text);
+            m.setOnAction(actionEvent -> {
+                if (Desktop.isDesktopSupported())
+                {
+                    new Thread(() -> {
+                        try {
+                            Desktop.getDesktop().browse(new URI(textComponent.url));
+                        } catch (MalformedURLException | URISyntaxException e) {
+                            e.printStackTrace();
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+                    }).start();
+                }
+            });
+            message.add(m);
+        }
+        // Sparks or other image.
+        else if (textComponent.url != null)
+        {
+            try {
+                message.add(new ImageView(new Image(textComponent.url, 50, 50, false, false)));
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+        // Emote.
+        else if (textComponent.type.name().equals("EMOTICON"))
+        {
+            Image image;
+            if (textComponent.source.equals("builtin"))
+            {
+                image = new Image(String.format("https://mixer.com/_latest/emoticons/%s.png", textComponent.pack));
+            }
+            else
+            {
+                image = new Image(textComponent.pack);
+            }
+            PixelReader reader = image.getPixelReader();
+            message.add(new ImageView(new WritableImage(reader, textComponent.coords.x, textComponent.coords.y, 24, 24)));
+        }
+        // Tag(@)
+        else if (textComponent.type.name().equals("TAG"))
+        {
+            MixMessage m = new MixMessage(textComponent.text, event.id, event.userName);
+            m.setFill(Color.BLUE);
+            message.add(m);
+        }
+        // Text.
+        else {
+            MixMessage m = new MixMessage(textComponent.text, event.id, event.userName);
+            message.add(m);
+        }
+        return message;
     }
 
     /**
@@ -479,7 +523,6 @@ public class MixChat {
             String output = formatTerminalChat(mEvent);
             System.out.println(output);
             updateText(formatChatBox(mEvent));
-            updateUsers(chatId);
         });
         /** On DeleteMessageEvent remove the message from chatBox with the uuid from dEvent */
         chatConnectible.on(DeleteMessageEvent.class, dEvent -> {
@@ -487,12 +530,33 @@ public class MixChat {
         });
         /** On UserJoinEvent update the users in chat. */
         chatConnectible.on(UserJoinEvent.class, jEvent -> {
-                updateUsers(chatId);
+                addUser(new MixChatUser(Integer.parseInt(jEvent.data.id), jEvent.data.username, jEvent.data.roles), true);
+                userListTimer.cancel();
+                userListTimer.schedule(new TimerTask() {
+                    @Override
+                    public void run() {
+                        updateUsers(chatId);
+                    }
+                }, 300000, 300000);
         });
         /** On UserLeaveEvent update the users in chat. */
         chatConnectible.on(UserLeaveEvent.class, lEvent -> {
-                updateUsers(chatId);
+            delUser(Integer.parseInt(lEvent.data.id), true);
+            userListTimer.cancel();
+            userListTimer.schedule(new TimerTask() {
+                @Override
+                public void run() {
+                    updateUsers(chatId);
+                }
+            }, 300000, 300000);
         });
+
+        userListTimer.schedule(new TimerTask() {
+            @Override
+            public void run() {
+                updateUsers(chatId);
+            }
+        }, 300000, 300000);
     }
 
     /**
@@ -856,8 +920,9 @@ public class MixChat {
             /**
              * Get json array of users.
              */
-            String result = getHTML(String.format("https://mixer.com/api/v1/chats/%d/users", id));
-            JSONArray c = new JSONArray(result);
+            //String result = getHTML(String.format("https://mixer.com/api/v1/chats/%d/users", id));
+            //JSONArray c = new JSONArray(result);
+            JSONArray c = getUserList(String.format("https://mixer.com/api/v1/chats/%d/users", id));
 
             /**
              * Iterate through array of users and add them to the list of users.
@@ -898,11 +963,41 @@ public class MixChat {
                     }
                 }
                 /** Add the new user to the list of users. */
-                addUser(new MixChatUser(userId, name, userRoles));
+                addUser(new MixChatUser(userId, name, userRoles), false);
+            }
+
+            updateUserList();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    private JSONArray getUserList(String url)
+    {
+        JSONArray result = null;
+        try {
+            result = new JSONArray(getHTML(url));
+            String cont = getHTMLHeaderLink(url);
+            if (cont != null) {
+                if (cont.contains("continuationToken") && !url.contains(cont)) {
+                    String requiredString = cont.substring(cont.indexOf("<") + 1, cont.indexOf(">"));
+                    JSONArray jsonArray = getUserList(String.format("https://mixer.com%s", requiredString));
+                    try {
+                        for (int i = 0; i < jsonArray.length(); i++) {
+                            JSONObject jsonObject = jsonArray.getJSONObject(i);
+                            result.put(jsonObject);
+                        }
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                    }
+                }
             }
         } catch (Exception e) {
             e.printStackTrace();
         }
+        if (result == null)
+            return new JSONArray();
+        return result;
     }
 
     /**
@@ -910,17 +1005,34 @@ public class MixChat {
      *
      * @param user  MixUser object to be added to the list of users
      */
-    public void addUser(MixChatUser user) {
+    private void addUser(MixChatUser user, boolean updateList)
+    {
         for (MixChatUser u : users) {
             if (u.getUserName().equals(user.getUserName())) {
-                updateUserList();
+                //Platform.runLater(() -> updateUserList());
                 return;
             }
         }
 
         users.add(user);
 
-        updateUserList();
+        if (updateList)
+            updateUserList();
+    }
+
+    private void delUser(int id, boolean updateList)
+    {
+        for (MixChatUser u : users)
+        {
+            if (u.getId() == id)
+            {
+                users.remove(u);
+                break;
+            }
+        }
+
+        if (updateList)
+            updateUserList();
     }
 
     /**
@@ -930,7 +1042,8 @@ public class MixChat {
      * @return              Returns the response from the GET.
      * @throws Exception
      */
-    public String getHTML(String urlToRead) throws Exception {
+    public String getHTML(String urlToRead) throws Exception
+    {
         StringBuilder result = new StringBuilder();
         URL url = new URL(urlToRead);
         HttpURLConnection conn = (HttpURLConnection) url.openConnection();
@@ -942,6 +1055,14 @@ public class MixChat {
         }
         rd.close();
         return result.toString();
+    }
+
+    public String getHTMLHeaderLink(String urlToRead) throws Exception
+    {
+        URL url = new URL(urlToRead);
+        HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+        conn.setRequestMethod("GET");
+        return conn.getHeaderField("link");
     }
 
     /**
