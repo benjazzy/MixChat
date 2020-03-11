@@ -522,7 +522,6 @@ public class MixChat {
      */
     public void sendMessage(String message) {
         chatConnectible.send(ChatSendMethod.of(message));
-        chatConnectible.send();
     }
 
     /**
