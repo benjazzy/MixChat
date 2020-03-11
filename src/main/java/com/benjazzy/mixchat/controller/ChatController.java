@@ -48,23 +48,25 @@ public class ChatController {
     @FXML
     public void initialize()
     {
-        ChatScrollPane.vvalueProperty().addListener(new ChangeListener<Number>() {
+        /*ChatScrollPane.vvalueProperty().addListener(new ChangeListener<Number>() {
             @Override
             public void changed(ObservableValue<? extends Number> observableValue, Number oldValue, Number newValue) {
                 System.out.println(ChatScrollPane.getVvalue());
                 System.out.println("Old Value: " + oldValue + " New Value: " + newValue);
-                if (ChatScrollPane.getVvalue() == 1f)
+                if (newValue.doubleValue() == 1.0d)
                 {
+                    System.out.println("Bind");
                     ChatScrollPane.vvalueProperty().bind(ChatBox.heightProperty());
                 }
-                if (ChatScrollPane.getVvalue() < 1.0)
+                else
                 {
                     System.out.println("Unbind");
                     ChatScrollPane.vvalueProperty().unbind();
                 }
             }
-        });
+        });*/
 
+        ChatScrollPane.setVvalue(1);
         ChatScrollPane.vvalueProperty().bind(ChatBox.heightProperty());
         ChatBox.prefWidthProperty().bind(ChatScrollPane.widthProperty());
     }
