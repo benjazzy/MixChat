@@ -1,6 +1,7 @@
 package com.benjazzy.mixchat;
 
 import com.mixer.api.resource.MixerUser;
+import javafx.scene.paint.Color;
 
 import java.util.Comparator;
 import java.util.List;
@@ -45,11 +46,37 @@ public class MixChatUser {
         else if (this.roleList.contains(MixerUser.Role.MOD)) {
             return MixerUser.Role.MOD;
         }
+        else if (this.roleList.contains(MixerUser.Role.SUBSCRIBER)) {
+            return MixerUser.Role.SUBSCRIBER;
+        }
         else if (this.roleList.contains(MixerUser.Role.PRO)) {
             return MixerUser.Role.PRO;
         }
         else {
             return MixerUser.Role.USER;
+        }
+    }
+
+    public Color getColor() {
+        switch (getPrimaryRole())
+        {
+            case OWNER:
+                return Color.BLACK;
+            case FOUNDER:
+                return Color.RED;
+            case STAFF:
+                return Color.GOLD;
+            case GLOBAL_MOD:
+                return Color.TEAL;
+            case SUBSCRIBER:
+                if (this.roleList.contains(MixerUser.Role.PRO))
+                    return Color.DEEPPINK;
+                else
+                    return Color.SKYBLUE;
+            case PRO:
+                return Color.DEEPPINK;
+            default:
+                return Color.SKYBLUE;
         }
     }
 
