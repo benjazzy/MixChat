@@ -391,7 +391,7 @@ public class MixChat {
         // Text.
         else {
             MixMessage m = new MixMessage(textComponent.text, event.id, event.userName);
-            if (!m.getText().contains("�\u200D♂"))
+            if (!m.getText().contains("�\u200D♂") && !m.getText().isEmpty())
                 message.add(m);
         }
         return message;
@@ -522,6 +522,7 @@ public class MixChat {
      */
     public void sendMessage(String message) {
         chatConnectible.send(ChatSendMethod.of(message));
+        chatConnectible.send();
     }
 
     /**
