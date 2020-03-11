@@ -40,6 +40,7 @@ import javafx.scene.text.TextFlow;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
+import sun.awt.X11.XErrorEvent;
 
 import javax.annotation.Nullable;
 import javax.net.ssl.SSLContext;
@@ -99,8 +100,8 @@ public class MixChat {
         chatScrollPane = chatPane;
 
         /** Sets chatScrollPane to always scroll to the bottom */
-        chatScrollPane.vvalueProperty().bind(chatBox.heightProperty());
-        chatBox.prefWidthProperty().bind(chatScrollPane.widthProperty());
+        //chatScrollPane.vvalueProperty().bind(chatBox.heightProperty());
+        //chatBox.prefWidthProperty().bind(chatScrollPane.widthProperty());
     }
 
     /**
@@ -172,6 +173,12 @@ public class MixChat {
                                     updateText(formatChatBox(result));
                                     System.out.println(formatTerminalChat(result));
                                     historyLatch.countDown();
+                                }
+
+                                @Override
+                                public void onFailure(Throwable err) {
+                                    err.printStackTrace();
+                                    System.out.println("Failed to get chat history.");
                                 }
                             });
                         }

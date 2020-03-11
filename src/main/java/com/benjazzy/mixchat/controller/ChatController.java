@@ -2,7 +2,10 @@ package com.benjazzy.mixchat.controller;
 
 import com.benjazzy.mixchat.MixChat;
 import com.benjazzy.mixchat.MixUI;
+import javafx.beans.value.ChangeListener;
+import javafx.beans.value.ObservableValue;
 import javafx.event.ActionEvent;
+import javafx.event.EventHandler;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.MenuItem;
@@ -10,11 +13,15 @@ import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TextField;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
+import javafx.scene.input.ScrollEvent;
+import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.VBox;
 import javafx.scene.text.TextFlow;
 
 import javax.jws.soap.SOAPBinding;
+import java.awt.event.AdjustmentEvent;
+import java.awt.event.AdjustmentListener;
 import java.util.concurrent.ExecutionException;
 
 public class ChatController {
@@ -35,6 +42,32 @@ public class ChatController {
     private TextFlow UserList;
     @FXML
     private ScrollPane ChatScrollPane;
+    @FXML
+    private AnchorPane ChatAnchor;
+
+    @FXML
+    public void initialize()
+    {
+        ChatScrollPane.vvalueProperty().addListener(new ChangeListener<Number>() {
+            @Override
+            public void changed(ObservableValue<? extends Number> observableValue, Number oldValue, Number newValue) {
+                System.out.println(ChatScrollPane.getVvalue());
+                System.out.println("Old Value: " + oldValue + " New Value: " + newValue);
+                if (ChatScrollPane.getVvalue() == 1f)
+                {
+                    ChatScrollPane.vvalueProperty().bind(ChatBox.heightProperty());
+                }
+                if (ChatScrollPane.getVvalue() < 1.0)
+                {
+                    System.out.println("Unbind");
+                    ChatScrollPane.vvalueProperty().unbind();
+                }
+            }
+        });
+
+        ChatScrollPane.vvalueProperty().bind(ChatBox.heightProperty());
+        ChatBox.prefWidthProperty().bind(ChatScrollPane.widthProperty());
+    }
 
     /**
      * Connects the MixChat to the selected channel
