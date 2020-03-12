@@ -28,6 +28,7 @@ import com.mixer.api.services.impl.UsersService;
 import com.sun.javafx.application.HostServicesDelegate;
 import javafx.application.HostServices;
 import javafx.application.Platform;
+import javafx.collections.ObservableList;
 import javafx.scene.Node;
 import javafx.scene.control.Hyperlink;
 import javafx.scene.control.ScrollPane;
@@ -67,16 +68,40 @@ import java.util.concurrent.TimeUnit;
  */
 public class MixChat {
 
-    private boolean connected = false;                      /** The connected variable is used to store whether the chat is connected. */
-    private String token = "";                              /** The token variable is used to store the Oauth2 token. */
-    private String mixerUsername = "";                      /** Username of the currently connected user. */
-    private int chatId = 0;                                 /** ChatId stores the id of the currently connected chat. */
-    private int userId = 0;                                 /** UserId stores the id of the current user. */
-    private List<MixChatUser> users = new LinkedList<>();   /** Users stores a list of users currently connected to the chat. */
-    private Timer userListTimer = new Timer();              /** In larger channels mixer doesn't send out the user join/leave event.
-                                                                This timer will update chat every 5 minutes if those events aren't triggered.*/
+    private boolean connected = false;
+    /**
+     * The connected variable is used to store whether the chat is connected.
+     */
+    private String token = "";
+    /**
+     * The token variable is used to store the Oauth2 token.
+     */
+    private String mixerUsername = "";
+    /**
+     * Username of the currently connected user.
+     */
+    private int chatId = 0;
+    /**
+     * ChatId stores the id of the currently connected chat.
+     */
+    private int userId = 0;
+    /**
+     * UserId stores the id of the current user.
+     */
+    private volatile List<MixChatUser> users = new LinkedList<>();
+    /**
+     * Users stores a list of users currently connected to the chat.
+     */
+    private Timer userListTimer = new Timer();
+    /**
+     * In larger channels mixer doesn't send out the user join/leave event.
+     * This timer will update chat every 5 minutes if those events aren't triggered.
+     */
 
-    private TextFlow chatBox;                               /** ChatBox is the TextFlow where the chat is displayed. */
+    private TextFlow chatBox;
+    /**
+     * ChatBox is the TextFlow where the chat is displayed.
+     */
     private TextFlow userList;                              /** UserList is the TextFlow where the list of users from users is displayed. */
 
     /**
@@ -85,8 +110,14 @@ public class MixChat {
      */
     private ScrollPane chatScrollPane;
 
-    private MixerAPI mixer;                         /** Mixer stores the main MixerAPI object */
-    private MixerChatConnectable chatConnectible;   /** ChatConnectible is used interface with the connected chat. */
+    private MixerAPI mixer;
+    /**
+     * Mixer stores the main MixerAPI object
+     */
+    private MixerChatConnectable chatConnectible;
+    /**
+     * ChatConnectible is used interface with the connected chat.
+     */
     private MixSocket socket;                       /** Used to manually interface with the Mixer API */
 
     /**
@@ -110,7 +141,7 @@ public class MixChat {
     /**
      * Connects to the specified Mixer chat.
      *
-     * @param chatName                  Name of the channel that is being connected to.
+     * @param chatName Name of the channel that is being connected to.
      * @throws InterruptedException
      * @throws ExecutionException
      */
@@ -211,8 +242,8 @@ public class MixChat {
     /**
      * Format the text from an incoming message.
      *
-     * @param event     Incoming message event that contains all the data of the message.
-     * @return          Returns a list of formatted text objects to be displayed in the chatBox.
+     * @param event Incoming message event that contains all the data of the message.
+     * @return Returns a list of formatted text objects to be displayed in the chatBox.
      */
     public List<Node> formatChatBox(IncomingMessageEvent event) {
         List<Node> textList = new ArrayList<>();                            /** List of Text objects to be returned. */
@@ -229,8 +260,7 @@ public class MixChat {
         /**
          * Iterates the message elements and adds them to the message list.
          */
-        for (MessageTextComponent i : event.data.message.message)
-        {
+        for (MessageTextComponent i : event.data.message.message) {
             message.addAll(formatMessageComponent(i, event.data));
         }
 
@@ -253,12 +283,10 @@ public class MixChat {
             username.setFill(Color.TEAL);
         }
 
-        if (event.data.message.meta.whisper)
-        {
+        if (event.data.message.meta.whisper) {
             username.setText(String.format(" %s ", username.getText(), mixerUsername));
             username.setFont(Font.font("Verdana", FontPosture.ITALIC, 12));
-        }
-        else {
+        } else {
             /** Adds spaces between the elements and adds a colon after the username. */
             username.setText(String.format(" %s: ", username.getText()));
         }
@@ -268,8 +296,7 @@ public class MixChat {
          */
         textList.add(dateText);
         textList.add(username);
-        if (event.data.message.meta.whisper)
-        {
+        if (event.data.message.meta.whisper) {
             MixMessage to = new MixMessage(String.format(" %s: ", mixerUsername), event.data.id, event.data.userName);
             Text separator = new Text(">");
             separator.setFont(Font.font("Verdana", FontPosture.ITALIC, 12));
@@ -280,7 +307,7 @@ public class MixChat {
         }
         for (Node m : message) {
             if (event.data.message.meta.whisper && m instanceof MixMessage)
-                ((MixMessage)m).setFont(Font.font("Verdana", FontPosture.ITALIC, 12));
+                ((MixMessage) m).setFont(Font.font("Verdana", FontPosture.ITALIC, 12));
             textList.add(m);
         }
 
@@ -290,8 +317,8 @@ public class MixChat {
     /**
      * Format the messages from previous messages.
      *
-     * @param event     Contains all the information on the past messages.
-     * @return          Returns a formatted list of messages to be displayed in chatBox.
+     * @param event Contains all the information on the past messages.
+     * @return Returns a formatted list of messages to be displayed in chatBox.
      */
     public List<Node> formatChatBox(ChatHistoryReply event) {
         /** List of formatted Text objects to be returned. */
@@ -354,17 +381,14 @@ public class MixChat {
      * @param event
      * @return
      */
-    private List<Node> formatMessageComponent(MessageTextComponent textComponent, IncomingMessageData event)
-    {
+    private List<Node> formatMessageComponent(MessageTextComponent textComponent, IncomingMessageData event) {
         List<Node> message = new LinkedList<>();
 
         // Link.
-        if (textComponent.type.name().equals("LINK"))
-        {
+        if (textComponent.type.name().equals("LINK")) {
             Hyperlink m = new Hyperlink(textComponent.text);
             m.setOnAction(actionEvent -> {
-                if (Desktop.isDesktopSupported())
-                {
+                if (Desktop.isDesktopSupported()) {
                     new Thread(() -> {
                         try {
                             Desktop.getDesktop().browse(new URI(textComponent.url));
@@ -379,8 +403,7 @@ public class MixChat {
             message.add(m);
         }
         // Sparks or other image.
-        else if (textComponent.url != null)
-        {
+        else if (textComponent.url != null) {
             try {
                 message.add(new ImageView(new Image(textComponent.url, 50, 50, false, false)));
             } catch (Exception e) {
@@ -388,23 +411,18 @@ public class MixChat {
             }
         }
         // Emote.
-        else if (textComponent.type.name().equals("EMOTICON"))
-        {
+        else if (textComponent.type.name().equals("EMOTICON")) {
             Image image;
-            if (textComponent.source.equals("builtin"))
-            {
+            if (textComponent.source.equals("builtin")) {
                 image = new Image(String.format("https://mixer.com/_latest/emoticons/%s.png", textComponent.pack));
-            }
-            else
-            {
+            } else {
                 image = new Image(textComponent.pack);
             }
             PixelReader reader = image.getPixelReader();
             message.add(new ImageView(new WritableImage(reader, textComponent.coords.x, textComponent.coords.y, 24, 24)));
         }
         // Tag(@)
-        else if (textComponent.type.name().equals("TAG"))
-        {
+        else if (textComponent.type.name().equals("TAG")) {
             MixMessage m = new MixMessage(textComponent.text, event.id, event.userName);
             m.setFill(Color.BLUE);
             message.add(m);
@@ -412,7 +430,7 @@ public class MixChat {
         // Text.
         else {
             MixMessage m = new MixMessage(textComponent.text, event.id, event.userName);
-            if (!m.getText().contains("�\u200D♂") && !m.getText().contains("\uD83D\uDE4B\uD83C\uDFFB\u200D♂️") &&!m.getText().isEmpty())
+            if (!m.getText().contains("�\u200D♂") && !m.getText().contains("\uD83D\uDE4B\uD83C\uDFFB\u200D♂️") && !m.getText().isEmpty())
                 message.add(m);
         }
         return message;
@@ -421,8 +439,8 @@ public class MixChat {
     /**
      * Formats messages from previous messages for the terminal.
      *
-     * @param event     Contains previous messages.
-     * @return          Returns a formatted String for the terminal.
+     * @param event Contains previous messages.
+     * @return Returns a formatted String for the terminal.
      */
     public String formatTerminalChat(ChatHistoryReply event) {
         /** String r is what is returned by the function. */
@@ -477,7 +495,7 @@ public class MixChat {
              */
             String output = String.format("%s %s%s%s: %s", formatter.format(date), usernameFormat, username,
                     ConsoleColors.RESET, message);
-            r = String.format("%s\n%s",r ,output);
+            r = String.format("%s\n%s", r, output);
         }
         return r;
     }
@@ -485,8 +503,8 @@ public class MixChat {
     /**
      * Formats messages from an incoming message for the terminal.
      *
-     * @param event     Contains incoming message.
-     * @return          Returns formatted String for the terminal.
+     * @param event Contains incoming message.
+     * @return Returns formatted String for the terminal.
      */
     public String formatTerminalChat(IncomingMessageEvent event) {
         String username = event.data.userName;      /** Set the username from the message username. */
@@ -539,26 +557,22 @@ public class MixChat {
     /**
      * Send a message to chat.getHTML
      *
-     * @param message   The message to be sent.
+     * @param message The message to be sent.
      */
     public void sendMessage(String message) {
-        if(message.startsWith("/")) {
+        if (message.startsWith("/")) {
             if ("/whisper".contains(message.split(" ")[0])) {
                 sendWhisper(message);
             }
-        }
-        else
+        } else
             chatConnectible.send(ChatSendMethod.of(message));
     }
 
-    private void sendWhisper(String message)
-    {
+    private void sendWhisper(String message) {
         String[] messageComponents = message.split(" ");
-        if (messageComponents.length < 3 || !messageComponents[1].startsWith("@"))
-        {
+        if (messageComponents.length < 3 || !messageComponents[1].startsWith("@")) {
             System.out.println("Invalid whisper.");
-        }
-        else {
+        } else {
             /**
              * Format the whisper to send.
              */
@@ -606,11 +620,9 @@ public class MixChat {
         }
     }
 
-    private MixerUser.Role getUserRole(String username)
-    {
+    private MixerUser.Role getUserRole(String username) {
         JSONObject reply = getUserInChat(chatId, username);
-        if (reply.length() == 0)
-        {
+        if (reply.length() == 0) {
             System.out.println("User is not in chat");
             return MixerUser.Role.USER;
         }
@@ -618,8 +630,7 @@ public class MixChat {
 
         List<MixerUser.Role> roleList = new LinkedList<>();
 
-        for (int i = 0; i < replyRoleList.length(); i++)
-        {
+        for (int i = 0; i < replyRoleList.length(); i++) {
             String role = replyRoleList.getString(i);
             roleList.add(MixerUser.Role.valueOf(role.toUpperCase()));
         }
@@ -635,10 +646,8 @@ public class MixChat {
         return mixChatUser.getPrimaryRole();
     }
 
-    private Color getRoleColor(MixerUser.Role role)
-    {
-        switch (role)
-        {
+    private Color getRoleColor(MixerUser.Role role) {
+        switch (role) {
             case MOD:
                 return Color.GREEN;
             case PRO:
@@ -674,18 +683,18 @@ public class MixChat {
         });
         /** On UserJoinEvent update the users in chat. */
         chatConnectible.on(UserJoinEvent.class, jEvent -> {
-                addUser(new MixChatUser(Integer.parseInt(jEvent.data.id), jEvent.data.username, jEvent.data.roles), true);
-                userListTimer.cancel();
-                userListTimer.schedule(new TimerTask() {
-                    @Override
-                    public void run() {
-                        updateUsers(chatId);
-                    }
-                }, 300000, 300000);
+            addUser(new MixChatUser(Integer.parseInt(jEvent.data.id), jEvent.data.username, jEvent.data.roles), false, true);
+            userListTimer.cancel();
+            userListTimer.schedule(new TimerTask() {
+                @Override
+                public void run() {
+                    updateUsers(chatId);
+                }
+            }, 300000, 300000);
         });
         /** On UserLeaveEvent update the users in chat. */
         chatConnectible.on(UserLeaveEvent.class, lEvent -> {
-            delUser(Integer.parseInt(lEvent.data.id), true);
+            delUser(Integer.parseInt(lEvent.data.id), false);
             userListTimer.cancel();
             userListTimer.schedule(new TimerTask() {
                 @Override
@@ -706,7 +715,7 @@ public class MixChat {
     /**
      * Delete message from chatBox using uuid from DeleteMessageEvent.
      *
-     * @param event     DeleteMessageEvent that contains the uuid of the message to delete.
+     * @param event DeleteMessageEvent that contains the uuid of the message to delete.
      */
     public void deleteMessage(DeleteMessageEvent event) {
         for (Node messageNode : chatBox.getChildren()) {
@@ -722,7 +731,7 @@ public class MixChat {
     /**
      * Send delete message uuid to the Mixer API.
      *
-     * @param uuid  Id of the message to be deleted.
+     * @param uuid Id of the message to be deleted.
      */
     public void deleteMessage(String uuid) {
         try {
@@ -757,8 +766,8 @@ public class MixChat {
     /**
      * Get the authkey from the specified endpoint.
      *
-     * @param url           Url of the endpoint to get the authkey from.  https://mixer.com/api/v1/chats/{chatid}.
-     * @return              Returns the authkey from the endpoint.
+     * @param url Url of the endpoint to get the authkey from.  https://mixer.com/api/v1/chats/{chatid}.
+     * @return Returns the authkey from the endpoint.
      * @throws IOException
      */
     private String getAuthkey(URL url) throws IOException {
@@ -770,10 +779,10 @@ public class MixChat {
         // Sending get request
         HttpURLConnection conn = (HttpURLConnection) url.openConnection();
 
-        conn.setRequestProperty("Authorization","Bearer "+ oauth.getAccessToken());
+        conn.setRequestProperty("Authorization", "Bearer " + oauth.getAccessToken());
         //e.g. bearer token= eyJhbGciOiXXXzUxMiJ9.eyJzdWIiOiPyc2hhcm1hQHBsdW1zbGljZS5jb206OjE6OjkwIiwiZXhwIjoxNTM3MzQyNTIxLCJpYXQiOjE1MzY3Mzc3MjF9.O33zP2l_0eDNfcqSQz29jUGJC-_THYsXllrmkFnk85dNRbAw66dyEKBP5dVcFUuNTA8zhA83kk3Y41_qZYx43T
 
-        conn.setRequestProperty("Content-Type","application/json");
+        conn.setRequestProperty("Content-Type", "application/json");
         conn.setRequestMethod("GET");
 
 
@@ -797,8 +806,8 @@ public class MixChat {
     /**
      * Get the websocket endpoint from the specified http endpoint.  https://mixer.com/api/v1/chats/{chatid}.
      *
-     * @param url           Url of the endpoint to get the websocket endpoint from.
-     * @return              The websocket endpoint from the http endpoint.
+     * @param url Url of the endpoint to get the websocket endpoint from.
+     * @return The websocket endpoint from the http endpoint.
      * @throws IOException
      */
     private String getEndpoints(URL url) throws IOException {
@@ -810,10 +819,10 @@ public class MixChat {
         // Sending get request
         HttpURLConnection conn = (HttpURLConnection) url.openConnection();
 
-        conn.setRequestProperty("Authorization","Bearer "+ oauth.getAccessToken());
+        conn.setRequestProperty("Authorization", "Bearer " + oauth.getAccessToken());
         //e.g. bearer token= eyJhbGciOiXXXzUxMiJ9.eyJzdWIiOiPyc2hhcm1hQHBsdW1zbGljZS5jb206OjE6OjkwIiwiZXhwIjoxNTM3MzQyNTIxLCJpYXQiOjE1MzY3Mzc3MjF9.O33zP2l_0eDNfcqSQz29jUGJC-_THYsXllrmkFnk85dNRbAw66dyEKBP5dVcFUuNTA8zhA83kk3Y41_qZYx43T
 
-        conn.setRequestProperty("Content-Type","application/json");
+        conn.setRequestProperty("Content-Type", "application/json");
         conn.setRequestMethod("GET");
 
 
@@ -838,9 +847,9 @@ public class MixChat {
     /**
      * Gets a new ssl websocket
      *
-     * @param url       Websocket endpoint and port to connect to.
-     * @param reply     MixSocketReply to reply to.
-     * @return          Returns a MixSocket that can send messages to the Mixer API.
+     * @param url   Websocket endpoint and port to connect to.
+     * @param reply MixSocketReply to reply to.
+     * @return Returns a MixSocket that can send messages to the Mixer API.
      * @throws KeyManagementException
      * @throws NoSuchAlgorithmException
      * @throws IOException
@@ -854,12 +863,12 @@ public class MixChat {
          * Setup Socket to user ssl.
          */
         SSLContext sslContext = null;
-        sslContext = SSLContext.getInstance( "TLS" );
-        sslContext.init( null, null, null );
+        sslContext = SSLContext.getInstance("TLS");
+        sslContext.init(null, null, null);
 
         SSLSocketFactory factory = sslContext.getSocketFactory();// (SSLSocketFactory) SSLSocketFactory.getDefault();
 
-        socket.setSocketFactory( factory );
+        socket.setSocketFactory(factory);
 
         socket.connectBlocking();   /** Connect to socket and block until connected. */
 
@@ -869,10 +878,10 @@ public class MixChat {
     /**
      * Send the auth message to specified websocket.
      *
-     * @param socket        Websocket to send the auth message over.
-     * @param authkey       Authkey from getAuthkey() to pass with auth message.
-     * @param channelID     ID of the channel to authenticate with.
-     * @param userID        ID of the user to authenticate as.
+     * @param socket    Websocket to send the auth message over.
+     * @param authkey   Authkey from getAuthkey() to pass with auth message.
+     * @param channelID ID of the channel to authenticate with.
+     * @param userID    ID of the user to authenticate as.
      */
     private void socketAuth(MixSocket socket, String authkey, int channelID, int userID) {
         /**
@@ -881,7 +890,7 @@ public class MixChat {
         JSONObject auth = new JSONObject("{\n" +
                 "  \"type\": \"method\",\n" +
                 "  \"method\": \"auth\",\n" +
-                "  \"arguments\": [" + channelID + ", " + userID +", \"" + authkey + "\"],\n" +
+                "  \"arguments\": [" + channelID + ", " + userID + ", \"" + authkey + "\"],\n" +
                 "  \"id\": 0\n" +
                 "}");
         socket.send(auth.toString());
@@ -890,8 +899,8 @@ public class MixChat {
     /**
      * Send the delete message message over the websocket.  Must send the auth message first.
      *
-     * @param socket    Websocket to send the delete message over.
-     * @param uuid      UUID of the message to be deleted.
+     * @param socket Websocket to send the delete message over.
+     * @param uuid   UUID of the message to be deleted.
      */
     private void socketDelete(MixSocket socket, String uuid) {
         JSONObject deleteKey = new JSONObject("{\n" +
@@ -907,7 +916,7 @@ public class MixChat {
     /**
      * Update the chatBox with the new messages.
      *
-     * @param text  List of Text objects to be added to chatBox.
+     * @param text List of Text objects to be added to chatBox.
      */
     private void updateText(List<Node> text) {
         for (Node t : text) {
@@ -939,46 +948,46 @@ public class MixChat {
         for (MixChatUser u : users) {
             switch (u.getPrimaryRole()) {
                 case OWNER:
-                    owner = new Text(u.getUserName());
+                    owner = new MixChatUserText(u.getUserName(), u.getId());
                     break;
                 case FOUNDER: {
-                    Text t = new Text(u.getUserName());
+                    MixChatUserText t = new MixChatUserText(u.getUserName(), u.getId());
                     t.setFill(u.getColor());
                     founder.add(t);
                     break;
                 }
                 case STAFF: {
-                    Text t = new Text(u.getUserName());
+                    MixChatUserText t = new MixChatUserText(u.getUserName(), u.getId());
                     t.setFill(u.getColor());
                     staff.add(t);
                     break;
                 }
                 case GLOBAL_MOD: {
-                    Text t = new Text(u.getUserName());
+                    MixChatUserText t = new MixChatUserText(u.getUserName(), u.getId());
                     t.setFill(u.getColor());
                     globalMod.add(t);
                     break;
                 }
                 case MOD: {
-                    Text t = new Text(u.getUserName());
+                    MixChatUserText t = new MixChatUserText(u.getUserName(), u.getId());
                     t.setFill(u.getColor());
                     mod.add(t);
                     break;
                 }
                 case SUBSCRIBER: {
-                    Text t = new Text(u.getUserName());
+                    MixChatUserText t = new MixChatUserText(u.getUserName(), u.getId());
                     t.setFill(u.getColor());
                     sub.add(t);
                     break;
                 }
                 case PRO: {
-                    Text t = new Text(u.getUserName());
+                    MixChatUserText t = new MixChatUserText(u.getUserName(), u.getId());
                     t.setFill(u.getColor());
                     pro.add(t);
                     break;
                 }
                 case USER: {
-                    Text t = new Text(u.getUserName());
+                    MixChatUserText t = new MixChatUserText(u.getUserName(), u.getId());
                     t.setFill(u.getColor());
                     user.add(t);
                     break;
@@ -994,13 +1003,13 @@ public class MixChat {
         List<Node> newUserList = new LinkedList<>();
         newUserList.clear();
         if (finalOwner != new Text()) {
-            newUserList.add(new Text("OWNER"));
+            newUserList.add(new MixChatUserText("OWNER", true, MixerUser.Role.OWNER));
             newUserList.add(new Text(System.lineSeparator()));
             newUserList.add(finalOwner);
             newUserList.add(new Text(System.lineSeparator()));
         }
         if (founder != null && !founder.isEmpty()) {
-            newUserList.add(new Text("FOUNDER"));
+            newUserList.add(new MixChatUserText("FOUNDER", true, MixerUser.Role.FOUNDER));
             newUserList.add(new Text(System.lineSeparator()));
             for (Text u : founder) {
                 newUserList.add(u);
@@ -1008,7 +1017,7 @@ public class MixChat {
             }
         }
         if (staff != null && !staff.isEmpty()) {
-            newUserList.add(new Text("STAFF"));
+            newUserList.add(new MixChatUserText("STAFF", true, MixerUser.Role.STAFF));
             newUserList.add(new Text(System.lineSeparator()));
             for (Text u : staff) {
                 newUserList.add(u);
@@ -1016,7 +1025,7 @@ public class MixChat {
             }
         }
         if (globalMod != null && !globalMod.isEmpty()) {
-            newUserList.add(new Text("GLOBAL MOD"));
+            newUserList.add(new MixChatUserText("GLOBAL MOD", true, MixerUser.Role.GLOBAL_MOD));
             newUserList.add(new Text(System.lineSeparator()));
             for (Text u : globalMod) {
                 newUserList.add(u);
@@ -1024,7 +1033,7 @@ public class MixChat {
             }
         }
         if (mod != null && !mod.isEmpty()) {
-            newUserList.add(new Text("MOD"));
+            newUserList.add(new MixChatUserText("MOD", true, MixerUser.Role.MOD));
             newUserList.add(new Text(System.lineSeparator()));
             for (Text u : mod) {
                 newUserList.add(u);
@@ -1032,7 +1041,7 @@ public class MixChat {
             }
         }
         if (sub != null && !sub.isEmpty()) {
-            newUserList.add(new Text("SUBSCRIBER"));
+            newUserList.add(new MixChatUserText("SUBSCRIBER", true, MixerUser.Role.SUBSCRIBER));
             newUserList.add(new Text(System.lineSeparator()));
             for (Text u : sub) {
                 newUserList.add(u);
@@ -1040,7 +1049,7 @@ public class MixChat {
             }
         }
         if (pro != null && !pro.isEmpty()) {
-            newUserList.add(new Text("PRO"));
+            newUserList.add(new MixChatUserText("PRO", true, MixerUser.Role.PRO));
             newUserList.add(new Text(System.lineSeparator()));
             for (Text u : pro) {
                 newUserList.add(u);
@@ -1048,7 +1057,7 @@ public class MixChat {
             }
         }
         if (user != null && !user.isEmpty()) {
-            newUserList.add(new Text("USER"));
+            newUserList.add(new MixChatUserText("USER", true, MixerUser.Role.USER));
             newUserList.add(new Text(System.lineSeparator()));
             for (Text u : user) {
                 newUserList.add(u);
@@ -1064,7 +1073,7 @@ public class MixChat {
     /**
      * Update users from Mixer API chats/(id)/users.
      *
-     * @param id    Id of the channel to get users from.
+     * @param id Id of the channel to get users from.
      */
     public void updateUsers(int id) {
         try {
@@ -1117,7 +1126,7 @@ public class MixChat {
                     }
                 }
                 /** Add the new user to the list of users. */
-                addUser(new MixChatUser(userId, name, userRoles), false);
+                addUser(new MixChatUser(userId, name, userRoles), false, false);
             }
 
             updateUserList();
@@ -1126,8 +1135,7 @@ public class MixChat {
         }
     }
 
-    private JSONArray getUserList(String url)
-    {
+    private JSONArray getUserList(String url) {
         JSONArray result = null;
         try {
             result = new JSONArray(getHTML(url));
@@ -1154,8 +1162,7 @@ public class MixChat {
         return result;
     }
 
-    public JSONObject getUserInChat(int id, String username)
-    {
+    public JSONObject getUserInChat(int id, String username) {
         JSONObject result = new JSONObject();
         try {
             result = new JSONObject(getHTML(String.format("https://mixer.com/api/v2/chats/%d/users/%d", id, getUserId(username))));
@@ -1173,13 +1180,11 @@ public class MixChat {
     /**
      * Check if user is already in users and if not add user to the list of users, users.
      *
-     * @param user  MixUser object to be added to the list of users
+     * @param user MixUser object to be added to the list of users
      */
-    private void addUser(MixChatUser user, boolean updateList)
-    {
+    private void addUser(MixChatUser user, boolean updateList, boolean singleUpdate) {
         for (MixChatUser u : users) {
             if (u.getUserName().equals(user.getUserName())) {
-                //Platform.runLater(() -> updateUserList());
                 return;
             }
         }
@@ -1190,14 +1195,66 @@ public class MixChat {
 
         if (updateList)
             updateUserList();
+        else if (singleUpdate) {
+            int start = 0;
+            for (Node node : userList.getChildrenUnmodifiable()) {
+                if (node instanceof MixChatUserText) {
+                    if (((MixChatUserText) node).isLabel) {
+                        if (((MixChatUserText) node).role == user.getPrimaryRole()) {
+                            start = userList.getChildrenUnmodifiable().indexOf(node) + 1;
+                            break;
+                        }
+                    }
+                }
+            }
+            // If the proper label is not found, to simplify thing we just update the whole list of users.
+            if (start == 0) {
+                updateUserList();
+            } else {
+                boolean hasAdded = false;
+                for (int i = start; i < userList.getChildren().size(); i++) {
+                    if (userList.getChildren().get(i) instanceof MixChatUserText) {
+                        if (((MixChatUserText) userList.getChildren().get(i)).isLabel) {
+                            int finalI1 = i;
+                            Platform.runLater(() -> {
+                                MixChatUserText userText = new MixChatUserText(user.getUserName(), user.getId());
+                                userText.setFill(user.getColor());
+                                userList.getChildren().add(finalI1 - 1, userText);
+                                userList.getChildren().add(finalI1, new Text(System.lineSeparator()));
+                            });
+                            hasAdded = true;
+                            break;
+                        } else {
+                            if (((MixChatUserText) userList.getChildren().get(i)).getText().compareToIgnoreCase(user.getUserName()) > 0) {
+                                List<Node> list = userList.getChildren();
+                                int finalI = i;
+                                Platform.runLater(() -> {
+                                    MixChatUserText userText = new MixChatUserText(user.getUserName(), user.getId());
+                                    userText.setFill(user.getColor());
+                                    userList.getChildren().add(finalI, userText);
+                                    userList.getChildren().add(finalI + 1, new Text(System.lineSeparator()));
+                                });
+                                hasAdded = true;
+                                break;
+                            }
+                        }
+                    }
+                }
+                if (!hasAdded) {
+                    Platform.runLater(() -> {
+                        MixChatUserText userText = new MixChatUserText(user.getUserName(), user.getId());
+                        userText.setFill(user.getColor());
+                        userList.getChildren().add(userText);
+                        userList.getChildren().add(new Text(System.lineSeparator()));
+                    });
+                }
+            }
+        }
     }
 
-    private void delUser(int id, boolean updateList)
-    {
-        for (MixChatUser u : users)
-        {
-            if (u.getId() == id)
-            {
+    private void delUser(int id, boolean updateList) {
+        for (MixChatUser u : users) {
+            if (u.getId() == id) {
                 users.remove(u);
                 break;
             }
@@ -1205,24 +1262,37 @@ public class MixChat {
 
         if (updateList)
             updateUserList();
-        else
-        {
-            for (Node user : userList.getChildren())
-            {
-
+        else {
+            for (Node user : userList.getChildren()) {
+                if (user instanceof MixChatUserText) {
+                    if (((MixChatUserText) user).id == id) {
+                        Platform.runLater(() -> {
+                            int index = userList.getChildren().indexOf(user);
+                            userList.getChildren().remove(index);
+                            userList.getChildren().remove(index);
+                            if (userList.getChildren().get(index - 2) instanceof MixChatUserText) {
+                                if (((MixChatUserText) (userList.getChildren().get(index - 2))).isLabel) {
+                                    userList.getChildren().remove(index - 1);
+                                    userList.getChildren().remove(index - 2);
+                                }
+                            }
+                        });
+                        System.out.println(userList.getChildren());
+                    }
+                }
             }
         }
     }
 
+
     /**
      * Used to send GET over http.
      *
-     * @param urlToRead     Url to send the GET to.
-     * @return              Returns the response from the GET.
+     * @param urlToRead Url to send the GET to.
+     * @return Returns the response from the GET.
      * @throws Exception
      */
-    public String getHTML(String urlToRead) throws Exception
-    {
+    public String getHTML(String urlToRead) throws Exception {
         StringBuilder result = new StringBuilder();
         URL url = new URL(urlToRead);
         HttpURLConnection conn = (HttpURLConnection) url.openConnection();
@@ -1236,8 +1306,7 @@ public class MixChat {
         return result.toString();
     }
 
-    public String getHTMLHeaderLink(String urlToRead) throws Exception
-    {
+    public String getHTMLHeaderLink(String urlToRead) throws Exception {
         URL url = new URL(urlToRead);
         HttpURLConnection conn = (HttpURLConnection) url.openConnection();
         conn.setRequestMethod("GET");
@@ -1247,21 +1316,19 @@ public class MixChat {
     /**
      * Checks whether or not the chat is currently connected.
      *
-     * @return  Connected.
+     * @return Connected.
      */
-	public boolean isConnected() {
-		return connected;
-	}
+    public boolean isConnected() {
+        return connected;
+    }
 
-	public String getMixerUsername() {
-	    return mixerUsername;
+    public String getMixerUsername() {
+        return mixerUsername;
     }
 }
 
-class SortByUserName implements Comparator<MixChatUser>
-{
-    public int compare(MixChatUser a, MixChatUser b)
-    {
-        return a.getUserName().compareTo(b.getUserName());
+class SortByUserName implements Comparator<MixChatUser> {
+    public int compare(MixChatUser a, MixChatUser b) {
+        return a.getUserName().compareToIgnoreCase(b.getUserName());
     }
 }
