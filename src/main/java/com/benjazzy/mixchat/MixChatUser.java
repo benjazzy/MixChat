@@ -68,6 +68,8 @@ public class MixChatUser {
                 return Color.GOLD;
             case GLOBAL_MOD:
                 return Color.TEAL;
+            case MOD:
+                return Color.GREEN;
             case SUBSCRIBER:
                 if (this.roleList.contains(MixerUser.Role.PRO))
                     return Color.DEEPPINK;

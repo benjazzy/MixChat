@@ -8,7 +8,7 @@ import javafx.scene.control.MenuItem;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.text.Text;
 
-public class MixMessage extends Text  {
+public class MixMessage extends Text {
     private String uuid;    /** Message uuid. */
     private String user;    /** User who sent the message. */
     private String whisperUser;
