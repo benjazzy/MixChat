@@ -30,7 +30,7 @@
                            <children>
                               <ScrollPane fx:id="ChatScrollPane" hbarPolicy="NEVER" prefHeight="200.0" prefWidth="200.0" vbarPolicy="ALWAYS" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
                                  <content>
-                                    <TextFlow fx:id="ChatBox" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" prefHeight="200.0" prefWidth="200.0">
+                                    <TextFlow fx:id="ChatBox" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" prefHeight="200.0" prefWidth="200.0" styleClass="text-field" stylesheets="@stylesheet.css">
                                        <padding>
                                           <Insets right="20.0" />
                                        </padding>

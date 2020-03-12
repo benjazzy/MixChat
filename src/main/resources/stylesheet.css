@@ -1,0 +1,9 @@
+@font-face {
+    font-family: 'OpenSansEmoji';
+    src: url('OpenSansEmoji/OpenSansEmoji.ttf');
+}
+
+.text-field {
+    -fx-font-family: OpenSansEmoji;
+    -fx-font-size: 14;
+}

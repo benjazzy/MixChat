@@ -67,7 +67,6 @@ import java.util.concurrent.TimeUnit;
  */
 public class MixChat {
 
-
     private boolean connected = false;                      /** The connected variable is used to store whether the chat is connected. */
     private String token = "";                              /** The token variable is used to store the Oauth2 token. */
     private String mixerUsername = "";                      /** Username of the currently connected user. */
@@ -413,7 +412,7 @@ public class MixChat {
         // Text.
         else {
             MixMessage m = new MixMessage(textComponent.text, event.id, event.userName);
-            if (!m.getText().contains("�\u200D♂") && !m.getText().isEmpty())
+            if (!m.getText().contains("�\u200D♂") && !m.getText().contains("\uD83D\uDE4B\uD83C\uDFFB\u200D♂️") &&!m.getText().isEmpty())
                 message.add(m);
         }
         return message;
@@ -992,71 +991,72 @@ public class MixChat {
          * Add the users to userList.
          */
         Text finalOwner = owner;
-        Platform.runLater(() -> {
-            userList.getChildren().clear();
-            if (finalOwner != new Text()) {
-                userList.getChildren().add(new Text("OWNER"));
-                userList.getChildren().add(new Text(System.lineSeparator()));
-                userList.getChildren().add(finalOwner);
-                userList.getChildren().add(new Text(System.lineSeparator()));
+        List<Node> newUserList = new LinkedList<>();
+        newUserList.clear();
+        if (finalOwner != new Text()) {
+            newUserList.add(new Text("OWNER"));
+            newUserList.add(new Text(System.lineSeparator()));
+            newUserList.add(finalOwner);
+            newUserList.add(new Text(System.lineSeparator()));
+        }
+        if (founder != null && !founder.isEmpty()) {
+            newUserList.add(new Text("FOUNDER"));
+            newUserList.add(new Text(System.lineSeparator()));
+            for (Text u : founder) {
+                newUserList.add(u);
+                newUserList.add(new Text(System.lineSeparator()));
             }
-            if (founder != null && !founder.isEmpty()) {
-                userList.getChildren().add(new Text("FOUNDER"));
-                userList.getChildren().add(new Text(System.lineSeparator()));
-                for (Text u : founder) {
-                    userList.getChildren().add(u);
-                    userList.getChildren().add(new Text(System.lineSeparator()));
-                }
+        }
+        if (staff != null && !staff.isEmpty()) {
+            newUserList.add(new Text("STAFF"));
+            newUserList.add(new Text(System.lineSeparator()));
+            for (Text u : staff) {
+                newUserList.add(u);
+                newUserList.add(new Text(System.lineSeparator()));
             }
-            if (staff != null && !staff.isEmpty()) {
-                userList.getChildren().add(new Text("STAFF"));
-                userList.getChildren().add(new Text(System.lineSeparator()));
-                for (Text u : staff) {
-                    userList.getChildren().add(u);
-                    userList.getChildren().add(new Text(System.lineSeparator()));
-                }
+        }
+        if (globalMod != null && !globalMod.isEmpty()) {
+            newUserList.add(new Text("GLOBAL MOD"));
+            newUserList.add(new Text(System.lineSeparator()));
+            for (Text u : globalMod) {
+                newUserList.add(u);
+                newUserList.add(new Text(System.lineSeparator()));
             }
-            if (globalMod != null && !globalMod.isEmpty()) {
-                userList.getChildren().add(new Text("GLOBAL MOD"));
-                userList.getChildren().add(new Text(System.lineSeparator()));
-                for (Text u : globalMod) {
-                    userList.getChildren().add(u);
-                    userList.getChildren().add(new Text(System.lineSeparator()));
-                }
+        }
+        if (mod != null && !mod.isEmpty()) {
+            newUserList.add(new Text("MOD"));
+            newUserList.add(new Text(System.lineSeparator()));
+            for (Text u : mod) {
+                newUserList.add(u);
+                newUserList.add(new Text(System.lineSeparator()));
             }
-            if (mod != null && !mod.isEmpty()) {
-                userList.getChildren().add(new Text("MOD"));
-                userList.getChildren().add(new Text(System.lineSeparator()));
-                for (Text u : mod) {
-                    userList.getChildren().add(u);
-                    userList.getChildren().add(new Text(System.lineSeparator()));
-                }
+        }
+        if (sub != null && !sub.isEmpty()) {
+            newUserList.add(new Text("SUBSCRIBER"));
+            newUserList.add(new Text(System.lineSeparator()));
+            for (Text u : sub) {
+                newUserList.add(u);
+                newUserList.add(new Text(System.lineSeparator()));
             }
-            if (sub != null && !sub.isEmpty()) {
-                userList.getChildren().add(new Text("SUBSCRIBER"));
-                userList.getChildren().add(new Text(System.lineSeparator()));
-                for (Text u : sub) {
-                    userList.getChildren().add(u);
-                    userList.getChildren().add(new Text(System.lineSeparator()));
-                }
+        }
+        if (pro != null && !pro.isEmpty()) {
+            newUserList.add(new Text("PRO"));
+            newUserList.add(new Text(System.lineSeparator()));
+            for (Text u : pro) {
+                newUserList.add(u);
+                newUserList.add(new Text(System.lineSeparator()));
             }
-            if (pro != null && !pro.isEmpty()) {
-                userList.getChildren().add(new Text("PRO"));
-                userList.getChildren().add(new Text(System.lineSeparator()));
-                for (Text u : pro) {
-                    userList.getChildren().add(u);
-                    userList.getChildren().add(new Text(System.lineSeparator()));
-                }
+        }
+        if (user != null && !user.isEmpty()) {
+            newUserList.add(new Text("USER"));
+            newUserList.add(new Text(System.lineSeparator()));
+            for (Text u : user) {
+                newUserList.add(u);
+                newUserList.add(new Text(System.lineSeparator()));
             }
-            if (user != null && !user.isEmpty()) {
-                userList.getChildren().add(new Text("USER"));
-                userList.getChildren().add(new Text(System.lineSeparator()));
-                for (Text u : user) {
-                    userList.getChildren().add(u);
-                    userList.getChildren().add(new Text(System.lineSeparator()));
-                }
-            }
-        });
+        }
+
+        Platform.runLater(() -> userList.getChildren().setAll(newUserList));
     }
 
     // TODO Use Mixer library to get list of users.
@@ -1205,6 +1205,13 @@ public class MixChat {
 
         if (updateList)
             updateUserList();
+        else
+        {
+            for (Node user : userList.getChildren())
+            {
+
+            }
+        }
     }
 
     /**
