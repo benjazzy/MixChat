@@ -15,8 +15,12 @@ import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.input.ScrollEvent;
 import javafx.scene.layout.AnchorPane;
+import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.VBox;
+import javafx.scene.paint.Color;
+import javafx.scene.shape.Circle;
+import javafx.scene.text.Text;
 import javafx.scene.text.TextFlow;
 
 import javax.jws.soap.SOAPBinding;
@@ -27,6 +31,7 @@ import java.util.concurrent.ExecutionException;
 public class ChatController {
     private MixChat mixChat;
     private String channelName;
+    private Text liveText;
 
     @FXML
     private VBox Root;
@@ -44,28 +49,14 @@ public class ChatController {
     private ScrollPane ChatScrollPane;
     @FXML
     private AnchorPane ChatAnchor;
+    @FXML
+    private HBox LiveBar;
+    @FXML
+    private Circle LiveCircle;
 
     @FXML
     public void initialize()
     {
-        /*ChatScrollPane.vvalueProperty().addListener(new ChangeListener<Number>() {
-            @Override
-            public void changed(ObservableValue<? extends Number> observableValue, Number oldValue, Number newValue) {
-                System.out.println(ChatScrollPane.getVvalue());
-                System.out.println("Old Value: " + oldValue + " New Value: " + newValue);
-                if (newValue.doubleValue() == 1.0d)
-                {
-                    System.out.println("Bind");
-                    ChatScrollPane.vvalueProperty().bind(ChatBox.heightProperty());
-                }
-                else
-                {
-                    System.out.println("Unbind");
-                    ChatScrollPane.vvalueProperty().unbind();
-                }
-            }
-        });*/
-
         ChatScrollPane.setVvalue(1);
         ChatScrollPane.vvalueProperty().bind(ChatBox.heightProperty());
         ChatBox.prefWidthProperty().bind(ChatScrollPane.widthProperty());
@@ -80,7 +71,7 @@ public class ChatController {
     {
         channelName = name;
         try {
-            mixChat = new MixChat(ChatBox, UserList, ChatScrollPane);
+            mixChat = new MixChat(this, ChatBox, UserList, ChatScrollPane);
             mixChat.connect(channelName);
         } catch (InterruptedException | ExecutionException e) {
             e.printStackTrace();
@@ -98,6 +89,25 @@ public class ChatController {
     public void deleteMessage(String uuid)
     {
         mixChat.deleteMessage(uuid);
+    }
+
+    public void setLive(boolean live)
+    {
+        if (live) {
+            if (!LiveBar.getChildren().contains(liveText)) ;
+            {
+                liveText = new Text("Live!");
+                liveText.setFill(Color.RED);
+                LiveBar.getChildren().add(liveText);
+                LiveCircle.setFill(Color.RED);
+            }
+        }
+        else {
+            if (liveText != null) {
+                LiveBar.getChildren().remove(liveText);
+                LiveCircle.setFill(Color.GREY);
+            }
+        }
     }
 
     /**
