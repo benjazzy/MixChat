@@ -26,7 +26,6 @@ jobs:
         java-version: 1.8
     - name: Build with Maven
       run: 
-        (echo '<?xml version="1.0" encoding="UTF-8"?>' && cat ~/.m2/settings.xml) > ~/.m2/settings.new
-        mv ~/.m2/settings.new ~/.m2/settings.xml
-        cat ~/.m2/settings.xml
-        mvn -s ~/.m2/settings.xml -B package --file pom.xml -e
+        (echo '<?xml version="1.0" encoding="UTF-8"?>' && cat ~/.m2/settings.xml) > ~/.m2/settings2.xml
+        cat ~/.m2/settings2.xml
+        mvn -s ~/.m2/settings2.xml -B package --file pom.xml -e
