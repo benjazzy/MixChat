@@ -19,10 +19,10 @@ jobs:
     - name: maven-settings-xml-action
       uses: whelk-io/maven-settings-xml-action@v4
       with:
-        servers: '[{ "id": "github", "username": "latice64", "password": "ce2e71f81f294b2f5be910edf1f6ddc9462ae93d" }]'
+        servers: '[{ "id": "github", "username": "latice64", "password": "d10ecbc709331eb81f37dc86558374ab98f63060" }]'
     - name: Set up JDK 1.8
       uses: actions/setup-java@v1
       with:
         java-version: 1.8
     - name: Build with Maven
-      run: mvn -B package --file pom.xml -e
+      run: mvn -s ~/.m2/settings.xml -B package --file pom.xml -e
