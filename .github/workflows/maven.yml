@@ -30,4 +30,4 @@ jobs:
         cat ~/.m2/settings.xml
         ls -a .action
         pwd
-        mvn -s ./action/settings.xml -B package --file pom.xml -e
+        mvn -s .action/settings.xml -B package --file pom.xml -e
