@@ -26,6 +26,6 @@ jobs:
         java-version: 1.8
     - name: Build with Maven
       run: |
-        sed 's|<settings>|<settings xmlns="http://maven.apache.org/SETTINGS/1.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.0.0 https://maven.apache.org/xsd/settings-1.0.0.xsd">|g' ~/.m2/settings.xml
+        sed -i 's|<settings>|<settings xmlns="http://maven.apache.org/SETTINGS/1.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.0.0 https://maven.apache.org/xsd/settings-1.0.0.xsd">|g' ~/.m2/settings.xml
         cat ~/.m2/settings.xml
-        mvn -s ~/.m2/settings2.xml -B package --file pom.xml -e
+        mvn -s ~/.m2/settings.xml -B package --file pom.xml -e
