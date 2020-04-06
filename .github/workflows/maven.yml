@@ -25,6 +25,6 @@ jobs:
       with:
         java-version: 1.8
     - name: Build with Maven
-      run: 
+      run: |
         cat ~/.m2/settings.xml
         mvn -s ~/.m2/settings2.xml -B package --file pom.xml -e
