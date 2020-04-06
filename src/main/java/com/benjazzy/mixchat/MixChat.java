@@ -257,8 +257,7 @@ public class MixChat {
             }
 
             try {
-                JSONObject channelArray = new JSONObject(getHTML(String.format("https://mixer.com/api/v1/channels/%s", chatName)));
-                if (channelArray.getBoolean("online")) {
+                if (channel.online) {
                     Platform.runLater(() -> chatController.setLive(true));
                 }
             } catch (Exception e) {
@@ -418,7 +417,7 @@ public class MixChat {
      * Formats the message based on the message type.
      *
      * @param textComponent
-     * @param event
+     * @param eventAdded .md to include in jar.
      * @return
      */
     private List<Node> formatMessageComponent(MessageTextComponent textComponent, IncomingMessageData event) {
