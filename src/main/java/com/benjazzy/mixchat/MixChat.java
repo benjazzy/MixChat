@@ -1,18 +1,14 @@
 package com.benjazzy.mixchat;
 
+import com.benjazzy.mixchat.controller.ChatController;
 import com.benjazzy.mixchat.helper.ConsoleColors;
 import com.benjazzy.mixchat.oauth.MixOauth;
-import com.google.api.services.oauth2.Oauth2;
 import com.mixer.api.MixerAPI;
 import com.mixer.api.resource.MixerUser;
 import com.mixer.api.resource.channel.MixerChannel;
 import com.mixer.api.resource.chat.MixerChat;
-import com.mixer.api.resource.chat.events.DeleteMessageEvent;
-import com.mixer.api.resource.chat.events.IncomingMessageEvent;
-import com.mixer.api.resource.chat.events.UserJoinEvent;
-import com.mixer.api.resource.chat.events.UserLeaveEvent;
+import com.mixer.api.resource.chat.events.*;
 import com.mixer.api.resource.chat.events.data.IncomingMessageData;
-import com.mixer.api.resource.chat.events.data.MessageComponent;
 import com.mixer.api.resource.chat.events.data.MessageComponent.MessageTextComponent;
 import com.mixer.api.resource.chat.methods.AuthenticateMessage;
 import com.mixer.api.resource.chat.methods.ChatSendMethod;
@@ -22,17 +18,20 @@ import com.mixer.api.resource.chat.replies.AuthenticationReply;
 import com.mixer.api.resource.chat.replies.ChatHistoryReply;
 import com.mixer.api.resource.chat.replies.ReplyHandler;
 import com.mixer.api.resource.chat.ws.MixerChatConnectable;
+import com.mixer.api.resource.constellation.MixerConstellation;
+import com.mixer.api.resource.constellation.events.HelloEvent;
+import com.mixer.api.resource.constellation.events.LiveEvent;
+import com.mixer.api.resource.constellation.methods.LiveSubscribeMethod;
+import com.mixer.api.resource.constellation.methods.data.LiveRequestData;
+import com.mixer.api.resource.constellation.replies.LiveRequestReply;
+import com.mixer.api.resource.constellation.ws.MixerConstellationConnectable;
 import com.mixer.api.services.impl.ChannelsService;
 import com.mixer.api.services.impl.ChatService;
 import com.mixer.api.services.impl.UsersService;
-import com.sun.javafx.application.HostServicesDelegate;
-import javafx.application.HostServices;
 import javafx.application.Platform;
-import javafx.collections.ObservableList;
 import javafx.scene.Node;
 import javafx.scene.control.Hyperlink;
 import javafx.scene.control.ScrollPane;
-import javafx.scene.control.TextField;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.image.PixelReader;
@@ -45,7 +44,6 @@ import javafx.scene.text.TextFlow;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
-import sun.awt.X11.XErrorEvent;
 
 import javax.annotation.Nullable;
 import javax.net.ssl.SSLContext;
@@ -58,9 +56,7 @@ import java.security.NoSuchAlgorithmException;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.List;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
 
 /**
  * The MixChat class handles communication with the Mixer API
@@ -98,6 +94,8 @@ public class MixChat {
      * This timer will update chat every 5 minutes if those events aren't triggered.
      */
 
+    private ChatController chatController;
+
     private TextFlow chatBox;
     /**
      * ChatBox is the TextFlow where the chat is displayed.
@@ -118,7 +116,11 @@ public class MixChat {
     /**
      * ChatConnectible is used interface with the connected chat.
      */
-    private MixSocket socket;                       /** Used to manually interface with the Mixer API */
+    MixerConstellation constellation;
+
+    MixerConstellationConnectable constellationConnectable;
+
+    private MixSocketClient socket;                       /** Used to manually interface with the Mixer API */
 
     /**
      * The constructor links the javafx variables to their Panes.
@@ -127,8 +129,9 @@ public class MixChat {
      * @param users
      * @param chatPane
      */
-    public MixChat(TextFlow chat, TextFlow users, ScrollPane chatPane) {
+    public MixChat(ChatController controller, TextFlow chat, TextFlow users, ScrollPane chatPane) {
         System.out.println("Setting chatBox");
+        chatController = controller;
         chatBox = chat;
         userList = users;
         chatScrollPane = chatPane;
@@ -224,6 +227,43 @@ public class MixChat {
             registerIncomingChat();
             /** Updates the list of current viewers. */
             updateUsers(chatId);
+
+            // Link constellation and mixer.
+            constellation = new MixerConstellation();
+            constellation.connectable(mixer);
+
+            // Get a constellation connectible using mixer and constellation.
+            constellationConnectable = constellation.connectable(mixer);
+
+            if (constellationConnectable.connect())
+            {
+                LiveSubscribeMethod method = new LiveSubscribeMethod();
+                LiveRequestData data = new LiveRequestData();
+                data.events = new ArrayList<>();
+                data.events.add(String.format("channel:%d:update", channel.id));
+                method.params = data;
+
+                constellationConnectable.send(method, new com.mixer.api.resource.constellation.replies.ReplyHandler<LiveRequestReply>() {
+                    @Override
+                    public void onSuccess(@Nullable LiveRequestReply result) {
+                    }
+
+                    @Override
+                    public void onFailure(Throwable err) {
+                        System.out.println(err);
+                    }
+                });
+                registerConstellation();
+            }
+
+            try {
+                JSONObject channelArray = new JSONObject(getHTML(String.format("https://mixer.com/api/v1/channels/%s", chatName)));
+                if (channelArray.getBoolean("online")) {
+                    Platform.runLater(() -> chatController.setLive(true));
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
         } else {
             System.out.println("Failed to connect");
         }
@@ -413,13 +453,22 @@ public class MixChat {
         // Emote.
         else if (textComponent.type.name().equals("EMOTICON")) {
             Image image;
+            int height = 24;
+            int width = 24;
             if (textComponent.source.equals("builtin")) {
                 image = new Image(String.format("https://mixer.com/_latest/emoticons/%s.png", textComponent.pack));
             } else {
                 image = new Image(textComponent.pack);
+                if (image.getHeight() % 56 == 0) {
+                    height = 56;
+                    width = 56;
+                }
             }
             PixelReader reader = image.getPixelReader();
-            message.add(new ImageView(new WritableImage(reader, textComponent.coords.x, textComponent.coords.y, 24, 24)));
+            ImageView imageView = new ImageView(new WritableImage(reader, textComponent.coords.x, textComponent.coords.y, height, width));
+            imageView.setFitHeight(28);
+            imageView.setFitWidth(28);
+            message.add(imageView);
         }
         // Tag(@)
         else if (textComponent.type.name().equals("TAG")) {
@@ -712,6 +761,27 @@ public class MixChat {
         }, 300000, 300000);
     }
 
+    private void registerConstellation() {
+        constellationConnectable.on(HelloEvent.class, hEvent -> {
+
+        });
+        constellationConnectable.on(LiveEvent.class, lEvent -> {
+            parseLiveEvent(lEvent);
+        });
+    }
+
+    private void parseLiveEvent(LiveEvent event) {
+        if (event.data.payload.has("online")) {
+            if (event.data.payload.get("online").getAsBoolean()) {
+                Platform.runLater(() -> chatController.setLive(true));
+            }
+            else {
+                Platform.runLater(() -> chatController.setLive(false));
+
+            }
+        }
+    }
+
     /**
      * Delete message from chatBox using uuid from DeleteMessageEvent.
      *
@@ -856,8 +926,8 @@ public class MixChat {
      * @throws URISyntaxException
      * @throws InterruptedException
      */
-    private MixSocket getSocket(URL url, MixSocketReply reply) throws KeyManagementException, NoSuchAlgorithmException, IOException, URISyntaxException, InterruptedException {
-        MixSocket socket = new MixSocket(new URI(getEndpoints(url)), reply);    /** Create new MixSocket using url and MixSocketReply reply. */
+    private MixSocketClient getSocket(URL url, MixSocketReply reply) throws KeyManagementException, NoSuchAlgorithmException, IOException, URISyntaxException, InterruptedException {
+        MixSocketClient socket = new MixSocketClient(new URI(getEndpoints(url)), reply);    /** Create new MixSocket using url and MixSocketReply reply. */
 
         /**
          * Setup Socket to user ssl.
@@ -868,7 +938,8 @@ public class MixChat {
 
         SSLSocketFactory factory = sslContext.getSocketFactory();// (SSLSocketFactory) SSLSocketFactory.getDefault();
 
-        socket.setSocketFactory(factory);
+        socket.setSocket(factory.createSocket());
+
 
         socket.connectBlocking();   /** Connect to socket and block until connected. */
 
@@ -883,7 +954,7 @@ public class MixChat {
      * @param channelID ID of the channel to authenticate with.
      * @param userID    ID of the user to authenticate as.
      */
-    private void socketAuth(MixSocket socket, String authkey, int channelID, int userID) {
+    private void socketAuth(MixSocketClient socket, String authkey, int channelID, int userID) {
         /**
          * Format json request int JSONObject
          */
@@ -902,7 +973,7 @@ public class MixChat {
      * @param socket Websocket to send the delete message over.
      * @param uuid   UUID of the message to be deleted.
      */
-    private void socketDelete(MixSocket socket, String uuid) {
+    private void socketDelete(MixSocketClient socket, String uuid) {
         JSONObject deleteKey = new JSONObject("{\n" +
                 "  \"type\": \"method\",\n" +
                 "  \"method\": \"deleteMessage\",\n" +
@@ -1277,13 +1348,11 @@ public class MixChat {
                                 }
                             }
                         });
-                        System.out.println(userList.getChildren());
                     }
                 }
             }
         }
     }
-
 
     /**
      * Used to send GET over http.

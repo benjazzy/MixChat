@@ -6,10 +6,10 @@ import org.json.JSONObject;
 
 import java.net.URI;
 
-public class MixSocket extends WebSocketClient {
+public class MixSocketClient extends WebSocketClient {
     private MixSocketReply reply;
 
-    public MixSocket( URI serverUri, MixSocketReply reply) {
+    public MixSocketClient(URI serverUri, MixSocketReply reply) {
         super( serverUri );
         this.reply = reply;
     }
