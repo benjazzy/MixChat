@@ -1,6 +1,6 @@
 # MixChat
 
-MixChat is a chat client built for Mixer. Mixer is a livestreaming platform built by Microsoft.  MixChat is heavily under development and not yet ready for use however as new features are add I will update the releases until hopefully it is a hightly configurable chat program.
+MixChat is a chat client built for mixer.com. Mixer is a livestreaming platform built by Microsoft.  MixChat is heavily under development and not yet ready for use however as new features are add I will update the releases until hopefully it is a hightly configurable chat program.
 
 # Installation 
 
