@@ -1,5 +1,6 @@
 package com.benjazzy.mixchat.controller;
 
+import com.benjazzy.mixchat.MixPreferences;
 import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.event.Event;
@@ -19,6 +20,7 @@ import java.util.concurrent.ExecutionException;
  */
 public class MixController {
     private ConnectController connectController;
+    private MixPreferences mixPreferences;
 
     @FXML
     private Button connect;
@@ -26,6 +28,23 @@ public class MixController {
     private TabPane connections;
     @FXML
     private Tab AddTab;
+
+    public MixController() {
+        mixPreferences = new MixPreferences();
+    }
+
+    @FXML
+    public void initialize() {
+        for (String channelName : mixPreferences.getDefaultChannels()) {
+            try {
+                Connect(channelName);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            } catch (ExecutionException e) {
+                e.printStackTrace();
+            }
+        }
+    }
 
     /**
      * Sets this instance of ConnectController.
@@ -171,6 +190,8 @@ public class MixController {
                 anchorPane.getChildren().add(root);
 
                 chat.setContent(anchorPane);
+
+                mixPreferences.addDefaultChannel(channelName);
             } catch (IOException e) {
                 e.printStackTrace();
             }
