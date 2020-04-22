@@ -1,9 +1,5 @@
 package com.benjazzy.mixchat.oauth;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.Arrays;
-
 import com.google.api.client.auth.oauth2.AuthorizationCodeFlow;
 import com.google.api.client.auth.oauth2.BearerToken;
 import com.google.api.client.auth.oauth2.ClientParametersAuthentication;
@@ -16,6 +12,10 @@ import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.api.client.json.JsonFactory;
 import com.google.api.client.json.jackson2.JacksonFactory;
 import com.google.api.client.util.store.FileDataStoreFactory;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.Arrays;
 
 /**
  * The MixOauth class handles obtaining the Oauth2 tokens from Mixer.
@@ -63,12 +63,16 @@ public class MixOauth {
 	 * @return
 	 */
 	public String getAccessToken() {
-		try {
-			credential.refreshToken();
-		} catch (IOException e) {
-			e.printStackTrace();
+		String token = credential.getAccessToken();
+		System.out.println(credential.getExpiresInSeconds());
+		if (credential.getExpiresInSeconds() != null && credential.getExpiresInSeconds() < 300) {
+			try {
+				credential.refreshToken();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
 		}
-		return credential.getAccessToken();
+		return token;
 	}
 
 	/**

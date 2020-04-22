@@ -1,6 +1,7 @@
 package com.benjazzy.mixchat.controller;
 
-import com.benjazzy.mixchat.MixPreferences;
+import com.benjazzy.mixchat.oauth.MixOauth;
+import com.benjazzy.mixchat.preferences.MixPreferences;
 import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.event.Event;
@@ -8,10 +9,13 @@ import javafx.event.EventHandler;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
-import javafx.scene.control.*;
+import javafx.scene.control.Button;
+import javafx.scene.control.Tab;
+import javafx.scene.control.TabPane;
 import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.Pane;
 import javafx.stage.Stage;
+
 import java.io.IOException;
 import java.util.concurrent.ExecutionException;
 
@@ -21,6 +25,8 @@ import java.util.concurrent.ExecutionException;
 public class MixController {
     private ConnectController connectController;
     private MixPreferences mixPreferences;
+
+    private String token;
 
     @FXML
     private Button connect;
@@ -149,6 +155,27 @@ public class MixController {
         Tab tab = connections.getSelectionModel().getSelectedItem();
         getChatController(tab).disconnect();
         closeTab(tab);
+
+        mixPreferences.removeDefaultChannel(tab.getText());
+    }
+
+    @FXML
+    public void Settings(ActionEvent event) {
+        Pane root;
+        try {
+            FXMLLoader loader = new FXMLLoader();
+            // Path to the FXML File
+            loader.setLocation(getClass().getResource("/SettingsWindow.fxml"));
+
+            // Create the Pane and all Details
+            root = loader.load();
+            Stage stage = new Stage();
+            stage.setTitle("Settings");
+            stage.setScene(new Scene(root));
+            stage.show();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     /**
@@ -173,11 +200,18 @@ public class MixController {
             try {
                 root = loader.load();
                 ChatController chatController = loader.getController();
+
+                if (token == null) {
+                    /** Gets an Oauth2 access token from MixOauth. */
+                    MixOauth oauth = new MixOauth();
+                    token = oauth.getAccessToken();
+                }
                 Thread thread = new Thread(() -> {
-                    chatController.connect(channelName);
+                    chatController.connect(channelName, token);
                 });
                 thread.start();
 
+                // Queue up these tasks to run after the scene is setup.
                 Platform.runLater(() -> {
                     Scene scene = root.getScene();
                     scene.setUserData(loader);
@@ -191,6 +225,7 @@ public class MixController {
 
                 chat.setContent(anchorPane);
 
+                // Add channelName to the list of channels to be opened on startup.
                 mixPreferences.addDefaultChannel(channelName);
             } catch (IOException e) {
                 e.printStackTrace();

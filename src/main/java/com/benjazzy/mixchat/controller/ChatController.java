@@ -1,11 +1,7 @@
 package com.benjazzy.mixchat.controller;
 
 import com.benjazzy.mixchat.MixChat;
-import com.benjazzy.mixchat.MixUI;
-import javafx.beans.value.ChangeListener;
-import javafx.beans.value.ObservableValue;
 import javafx.event.ActionEvent;
-import javafx.event.EventHandler;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.MenuItem;
@@ -13,19 +9,14 @@ import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TextField;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
-import javafx.scene.input.ScrollEvent;
 import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.HBox;
-import javafx.scene.layout.Pane;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
 import javafx.scene.text.Text;
 import javafx.scene.text.TextFlow;
 
-import javax.jws.soap.SOAPBinding;
-import java.awt.event.AdjustmentEvent;
-import java.awt.event.AdjustmentListener;
 import java.util.concurrent.ExecutionException;
 
 public class ChatController {
@@ -67,12 +58,12 @@ public class ChatController {
      *
      * @param name
      */
-    public void connect(String name)
+    public void connect(String name, String token)
     {
         channelName = name;
         try {
             mixChat = new MixChat(this, ChatBox, UserList, ChatScrollPane);
-            mixChat.connect(channelName);
+            mixChat.connect(channelName, token);
         } catch (InterruptedException | ExecutionException e) {
             e.printStackTrace();
         }
