@@ -1,5 +1,8 @@
 package com.benjazzy.mixchat.controller;
 
+import com.benjazzy.mixchat.oauth.MixOauth;
+import com.mixer.api.MixerAPI;
+import com.mixer.api.services.impl.ChannelsService;
 import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.event.Event;
@@ -7,18 +10,23 @@ import javafx.event.EventHandler;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
-import javafx.scene.control.*;
+import javafx.scene.control.Button;
+import javafx.scene.control.Tab;
+import javafx.scene.control.TabPane;
 import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.Pane;
 import javafx.stage.Stage;
+
 import java.io.IOException;
 import java.util.concurrent.ExecutionException;
+
 
 /**
  * Controller class for the main UI and chat connect UI.
  */
 public class MixController {
     private ConnectController connectController;
+    private ErrorController errorController;
 
     @FXML
     private Button connect;
@@ -26,6 +34,12 @@ public class MixController {
     private TabPane connections;
     @FXML
     private Tab AddTab;
+
+    private MixerAPI mixer;
+    /**
+     * The connected variable is used to store whether the chat is connected.
+     */
+    private String token = "";
 
     /**
      * Sets this instance of ConnectController.
@@ -36,6 +50,17 @@ public class MixController {
     {
         this.connectController = controller;
     }
+
+    /**
+     * Sets this instance of ErrorController.
+     *
+     * @param controller
+     */
+    public void setErrorController(ErrorController controller)
+    {
+        this.errorController = controller;
+    }
+
 
     public void deleteMessage(String uuid)
     {
@@ -140,40 +165,73 @@ public class MixController {
      * @throws ExecutionException
      */
     public void Connect(String channelName) throws InterruptedException, ExecutionException {
-        /** Check if a channel name has been specified. */
-        if (channelName != null) {
-            Tab chat = new Tab(channelName);
-            System.out.println(connections.getTabs());
-            connections.getTabs().add(connections.getTabs().size() - 1, chat);
-            connections.getSelectionModel().select(chat);
+        /** Gets an Oauth2 access token from MixOauth. */
+        MixOauth oauth = new MixOauth();
+        token = oauth.getAccessToken();
 
-            Pane root;
+        /** Authenticates with Mixer using the Oauth2 token. */
+        mixer = new MixerAPI("3721d6b1332a6db44a22ab5b71ae8e34ae187ee995b38f1a", token);
+        try {
+            mixer.use(ChannelsService.class).findOneByToken(channelName).get();
+        } catch (Exception e) {
+            ErrorWindow();
+            System.out.println("Invalid channel name. Please check spelling and try again");
+            return;
+        }
+        Tab chat = new Tab(channelName);
+        System.out.println(connections.getTabs());
+        connections.getTabs().add(connections.getTabs().size() - 1, chat);
+        connections.getSelectionModel().select(chat);
+
+        Pane root;
+        FXMLLoader loader = new FXMLLoader();
+        // Path to the FXML File
+        loader.setLocation(getClass().getResource("/MixChatWindow.fxml"));
+        try {
+            root = loader.load();
+            ChatController chatController = loader.getController();
+            Thread thread = new Thread(() -> {
+                chatController.connect(channelName);
+            });
+            thread.start();
+
+            Platform.runLater(() -> {
+                Scene scene = root.getScene();
+                scene.setUserData(loader);
+            });
+            AnchorPane anchorPane = new AnchorPane();
+            AnchorPane.setTopAnchor(root, 0.0);
+            AnchorPane.setBottomAnchor(root, 0.0);
+            AnchorPane.setLeftAnchor(root, 0.0);
+            AnchorPane.setRightAnchor(root, 0.0);
+            anchorPane.getChildren().add(root);
+
+            chat.setContent(anchorPane);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    @FXML
+    private void ErrorWindow() {
+        Pane root;
+        try {
             FXMLLoader loader = new FXMLLoader();
             // Path to the FXML File
-            loader.setLocation(getClass().getResource("/MixChatWindow.fxml"));
-            try {
-                root = loader.load();
-                ChatController chatController = loader.getController();
-                Thread thread = new Thread(() -> {
-                    chatController.connect(channelName);
-                });
-                thread.start();
+            loader.setLocation(getClass().getResource("/ErrorWindow.fxml"));
 
-                Platform.runLater(() -> {
-                    Scene scene = root.getScene();
-                    scene.setUserData(loader);
-                });
-                AnchorPane anchorPane = new AnchorPane();
-                AnchorPane.setTopAnchor(root, 0.0);
-                AnchorPane.setBottomAnchor(root, 0.0);
-                AnchorPane.setLeftAnchor(root, 0.0);
-                AnchorPane.setRightAnchor(root, 0.0);
-                anchorPane.getChildren().add(root);
+            // Create the Pane and all Details
+            root = loader.load();
+            Stage stage = new Stage();
+            stage.setTitle("Invalid Channel");
+            stage.setScene(new Scene(root));
+            stage.show();
 
-                chat.setContent(anchorPane);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
+            // Pass this instance of MixController to the ErrorController.
+            setErrorController(loader.getController());
+            errorController.setMixController(this);
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 }

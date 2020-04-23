@@ -63,9 +63,7 @@ public class ConnectController {
         if (event.getCode() == KeyCode.ENTER) {
             try {
                 ConnectWindowDone(new ActionEvent());
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            } catch (ExecutionException e) {
+            } catch (InterruptedException | ExecutionException e) {
                 e.printStackTrace();
             }
         }
