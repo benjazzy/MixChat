@@ -7,7 +7,10 @@ import com.mixer.api.MixerAPI;
 import com.mixer.api.resource.MixerUser;
 import com.mixer.api.resource.channel.MixerChannel;
 import com.mixer.api.resource.chat.MixerChat;
-import com.mixer.api.resource.chat.events.*;
+import com.mixer.api.resource.chat.events.DeleteMessageEvent;
+import com.mixer.api.resource.chat.events.IncomingMessageEvent;
+import com.mixer.api.resource.chat.events.UserJoinEvent;
+import com.mixer.api.resource.chat.events.UserLeaveEvent;
 import com.mixer.api.resource.chat.events.data.IncomingMessageData;
 import com.mixer.api.resource.chat.events.data.MessageComponent.MessageTextComponent;
 import com.mixer.api.resource.chat.methods.AuthenticateMessage;
@@ -49,13 +52,15 @@ import javax.annotation.Nullable;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSocketFactory;
 import java.awt.*;
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.net.*;
 import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
 import java.text.SimpleDateFormat;
-import java.util.*;
 import java.util.List;
+import java.util.*;
 import java.util.concurrent.ExecutionException;
 
 /**
@@ -148,14 +153,12 @@ public class MixChat {
      * @throws InterruptedException
      * @throws ExecutionException
      */
-    public void connect(String chatName) throws InterruptedException, ExecutionException {
+    public void connect(String chatName, String token) throws InterruptedException, ExecutionException {
         System.out.println(chatName);
 
         Platform.runLater(() -> chatBox.getChildren().clear());      /** Clears the chat for the next connection. */
 
-        /** Gets an Oauth2 access token from MixOauth. */
-        MixOauth oauth = new MixOauth();
-        token = oauth.getAccessToken();
+        this.token = token;
 
         /** Authenticates with Mixer using the Oauth2 token. */
         mixer = new MixerAPI("3721d6b1332a6db44a22ab5b71ae8e34ae187ee995b38f1a", token);
@@ -417,7 +420,7 @@ public class MixChat {
      * Formats the message based on the message type.
      *
      * @param textComponent
-     * @param eventAdded .md to include in jar.
+     * @param event Added .md to include in jar.
      * @return
      */
     private List<Node> formatMessageComponent(MessageTextComponent textComponent, IncomingMessageData event) {
