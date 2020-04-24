@@ -1,5 +1,9 @@
 package com.benjazzy.mixchat.controller;
 
+import com.benjazzy.mixchat.oauth.MixOauth;
+import com.benjazzy.mixchat.preferences.MixPreferences;
+import com.mixer.api.MixerAPI;
+import com.mixer.api.services.impl.ChannelsService;
 import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.event.Event;
@@ -235,36 +239,35 @@ public class MixController {
         connections.getTabs().add(connections.getTabs().size() - 1, chat);
         connections.getSelectionModel().select(chat);
 
-            Pane root;
-            FXMLLoader loader = new FXMLLoader();
-            // Path to the FXML File
-            loader.setLocation(getClass().getResource("/MixChatWindow.fxml"));
-            try {
-                root = loader.load();
-                ChatController chatController = loader.getController();
-                Thread thread = new Thread(() -> {
-                    chatController.connect(channelName);
-                });
-                thread.start();
+        Pane root;
+        FXMLLoader loader = new FXMLLoader();
+        // Path to the FXML File
+        loader.setLocation(getClass().getResource("/MixChatWindow.fxml"));
+        try {
+            root = loader.load();
+            ChatController chatController = loader.getController();
+            Thread thread = new Thread(() -> {
+                chatController.connect(channelName, token);
+            });
+            thread.start();
 
-                Platform.runLater(() -> {
-                    Scene scene = root.getScene();
-                    scene.setUserData(loader);
-                });
-                AnchorPane anchorPane = new AnchorPane();
-                AnchorPane.setTopAnchor(root, 0.0);
-                AnchorPane.setBottomAnchor(root, 0.0);
-                AnchorPane.setLeftAnchor(root, 0.0);
-                AnchorPane.setRightAnchor(root, 0.0);
-                anchorPane.getChildren().add(root);
+            Platform.runLater(() -> {
+                Scene scene = root.getScene();
+                scene.setUserData(loader);
+            });
+            AnchorPane anchorPane = new AnchorPane();
+            AnchorPane.setTopAnchor(root, 0.0);
+            AnchorPane.setBottomAnchor(root, 0.0);
+            AnchorPane.setLeftAnchor(root, 0.0);
+            AnchorPane.setRightAnchor(root, 0.0);
+            anchorPane.getChildren().add(root);
 
-                chat.setContent(anchorPane);
+            chat.setContent(anchorPane);
 
-                // Add channelName to the list of channels to be opened on startup.
-                mixPreferences.addDefaultChannel(channelName);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
+            // Add channelName to the list of channels to be opened on startup.
+            mixPreferences.addDefaultChannel(channelName);
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 
@@ -289,6 +292,7 @@ public class MixController {
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
 
     public TabPane getConnections() {
         return connections;
