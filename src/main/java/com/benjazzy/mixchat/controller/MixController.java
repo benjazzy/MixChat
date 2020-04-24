@@ -1,7 +1,5 @@
 package com.benjazzy.mixchat.controller;
 
-import com.benjazzy.mixchat.oauth.MixOauth;
-import com.benjazzy.mixchat.preferences.MixPreferences;
 import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.event.Event;
@@ -27,7 +25,7 @@ public class MixController {
     private ConnectController connectController;
     private MixPreferences mixPreferences;
 
-    private String token;
+    private ErrorController errorController;
 
     @FXML
     private Button connect;
@@ -39,6 +37,12 @@ public class MixController {
     public MixController() {
         mixPreferences = new MixPreferences();
     }
+
+    private MixerAPI mixer;
+    /**
+     * The connected variable is used to store whether the chat is connected.
+     */
+    private String token;
 
     @FXML
     public void initialize() {
@@ -62,6 +66,17 @@ public class MixController {
     {
         this.connectController = controller;
     }
+
+    /**
+     * Sets this instance of ErrorController.
+     *
+     * @param controller
+     */
+    public void setErrorController(ErrorController controller)
+    {
+        this.errorController = controller;
+    }
+
 
     public void deleteMessage(String uuid)
     {
@@ -200,11 +215,25 @@ public class MixController {
      * @throws ExecutionException
      */
     public void Connect(String channelName) throws InterruptedException, ExecutionException {
-        /** Check if a channel name has been specified. */
-        if (channelName != null) {
-            Tab chat = new Tab(channelName);
-            connections.getTabs().add(connections.getTabs().size() - 1, chat);
-            connections.getSelectionModel().select(chat);
+        if (token == null) {
+            /** Gets an Oauth2 access token from MixOauth. */
+            MixOauth oauth = new MixOauth();
+            token = oauth.getAccessToken();
+        }
+
+        /** Authenticates with Mixer using the Oauth2 token. */
+        mixer = new MixerAPI("3721d6b1332a6db44a22ab5b71ae8e34ae187ee995b38f1a", token);
+        try {
+            mixer.use(ChannelsService.class).findOneByToken(channelName).get();
+        } catch (Exception e) {
+            ErrorWindow();
+            System.out.println("Invalid channel name. Please check spelling and try again");
+            return;
+        }
+        Tab chat = new Tab(channelName);
+        System.out.println(connections.getTabs());
+        connections.getTabs().add(connections.getTabs().size() - 1, chat);
+        connections.getSelectionModel().select(chat);
 
             Pane root;
             FXMLLoader loader = new FXMLLoader();
@@ -213,18 +242,11 @@ public class MixController {
             try {
                 root = loader.load();
                 ChatController chatController = loader.getController();
-
-                if (token == null) {
-                    /** Gets an Oauth2 access token from MixOauth. */
-                    MixOauth oauth = new MixOauth();
-                    token = oauth.getAccessToken();
-                }
                 Thread thread = new Thread(() -> {
-                    chatController.connect(channelName, token);
+                    chatController.connect(channelName);
                 });
                 thread.start();
 
-                // Queue up these tasks to run after the scene is setup.
                 Platform.runLater(() -> {
                     Scene scene = root.getScene();
                     scene.setUserData(loader);
@@ -245,6 +267,28 @@ public class MixController {
             }
         }
     }
+
+    @FXML
+    private void ErrorWindow() {
+        Pane root;
+        try {
+            FXMLLoader loader = new FXMLLoader();
+            // Path to the FXML File
+            loader.setLocation(getClass().getResource("/ErrorWindow.fxml"));
+
+            // Create the Pane and all Details
+            root = loader.load();
+            Stage stage = new Stage();
+            stage.setTitle("Invalid Channel");
+            stage.setScene(new Scene(root));
+            stage.show();
+
+            // Pass this instance of MixController to the ErrorController.
+            setErrorController(loader.getController());
+            errorController.setMixController(this);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
 
     public TabPane getConnections() {
         return connections;
