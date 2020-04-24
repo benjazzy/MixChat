@@ -68,6 +68,7 @@ public class MixOauth {
 		if (credential.getExpiresInSeconds() != null && credential.getExpiresInSeconds() < 300) {
 			try {
 				credential.refreshToken();
+				token = credential.getAccessToken();
 			} catch (IOException e) {
 				e.printStackTrace();
 			}

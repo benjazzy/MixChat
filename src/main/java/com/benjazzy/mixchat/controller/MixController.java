@@ -15,6 +15,7 @@ import javafx.scene.control.TabPane;
 import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.Pane;
 import javafx.stage.Stage;
+import javafx.util.Callback;
 
 import java.io.IOException;
 import java.util.concurrent.ExecutionException;
@@ -166,7 +167,20 @@ public class MixController {
             FXMLLoader loader = new FXMLLoader();
             // Path to the FXML File
             loader.setLocation(getClass().getResource("/SettingsWindow.fxml"));
-
+            //Manually set the javafx controller factory so that we can pass arguments to the constructor.
+            Callback<Class<?>, Object> settingsFactory = type -> {
+                if (type == SettingsController.class) {
+                    return new SettingsController(this);
+                } else {
+                    try {
+                        return type.newInstance() ; // default behavior - invoke no-arg construtor
+                    } catch (Exception exc) {
+                        System.err.println("Could not create controller for "+type.getName());
+                        throw new RuntimeException(exc);
+                    }
+                }
+            };
+            loader.setControllerFactory(settingsFactory);
             // Create the Pane and all Details
             root = loader.load();
             Stage stage = new Stage();
@@ -189,7 +203,6 @@ public class MixController {
         /** Check if a channel name has been specified. */
         if (channelName != null) {
             Tab chat = new Tab(channelName);
-            System.out.println(connections.getTabs());
             connections.getTabs().add(connections.getTabs().size() - 1, chat);
             connections.getSelectionModel().select(chat);
 
@@ -231,5 +244,13 @@ public class MixController {
                 e.printStackTrace();
             }
         }
+    }
+
+    public TabPane getConnections() {
+        return connections;
+    }
+
+    public MixPreferences getMixPreferences() {
+        return mixPreferences;
     }
 }

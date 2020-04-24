@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 <AnchorPane maxHeight="-Infinity" maxWidth="-Infinity" prefHeight="400.0" prefWidth="600.0" xmlns="http://javafx.com/javafx/8.0.171" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.benjazzy.mixchat.controller.SettingsController">
@@ -9,11 +8,11 @@
         <tabs>
           <Tab text="Chat">
             <content>
-              <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="180.0" prefWidth="200.0">
+              <AnchorPane maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" minHeight="0.0" minWidth="0.0" prefHeight="180.0" prefWidth="200.0">
                      <children>
-                        <ScrollPane hbarPolicy="NEVER" prefHeight="200.0" prefWidth="200.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+                        <ScrollPane hbarPolicy="NEVER" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" prefHeight="200.0" prefWidth="200.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
                           <content>
-                            <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="365.0" prefWidth="599.0">
+                            <AnchorPane maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" minHeight="0.0" minWidth="0.0" prefHeight="365.0" prefWidth="599.0">
                                  <children>
                                     <GridPane AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
                                       <columnConstraints>
@@ -26,11 +25,16 @@
                                         <RowConstraints maxHeight="115.0" minHeight="10.0" prefHeight="20.0" vgrow="SOMETIMES" />
                                       </rowConstraints>
                                        <children>
-                                          <TableView fx:id="DefaultChannels" prefHeight="200.0" prefWidth="294.0" GridPane.columnIndex="1">
-                                            <columns>
-                                              <TableColumn prefWidth="400.0" text="Default Channels" />
-                                            </columns>
-                                          </TableView>
+                                          <GridPane maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" GridPane.columnIndex="1">
+                                            <rowConstraints>
+                                              <RowConstraints maxHeight="124.0" minHeight="10.0" prefHeight="29.0" vgrow="SOMETIMES" />
+                                              <RowConstraints maxHeight="230.0" minHeight="10.0" prefHeight="230.0" vgrow="SOMETIMES" />
+                                            </rowConstraints>
+                                             <children>
+                                                <ListView fx:id="DefaultChannels" prefHeight="211.0" prefWidth="394.0" GridPane.rowIndex="1" />
+                                                <Label alignment="CENTER" prefHeight="47.0" prefWidth="394.0" text="Default Channels" />
+                                             </children>
+                                          </GridPane>
                                        </children>
                                     </GridPane>
                                  </children>
@@ -39,11 +43,6 @@
                         </ScrollPane>
                      </children>
                   </AnchorPane>
-            </content>
-          </Tab>
-          <Tab text="Theme">
-            <content>
-              <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="180.0" prefWidth="200.0" />
             </content>
           </Tab>
         </tabs>
