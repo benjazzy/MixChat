@@ -18,7 +18,7 @@ public class MixMessage extends Text {
         this.uuid = id;
         this.user = user;
 
-        /**
+        /*
          * Add delete option to context menu.
          */
         ContextMenu menu = new ContextMenu();
@@ -35,7 +35,7 @@ public class MixMessage extends Text {
 
         this.setOnContextMenuRequested(contextMenuEvent -> menu.show((Node) contextMenuEvent.getSource(), contextMenuEvent.getScreenX(), contextMenuEvent.getScreenY()));
 
-        /**
+        /*
          * Register click listener.
          */
         EventHandler<MouseEvent> overHandler = mouseEvent -> setUnderline(true);
@@ -52,7 +52,7 @@ public class MixMessage extends Text {
         this.user = user;
         this.whisperUser = whisperUser;
 
-        /**
+        /*
          * Add delete option to context menu.
          */
         ContextMenu menu = new ContextMenu();
@@ -69,7 +69,7 @@ public class MixMessage extends Text {
 
         this.setOnContextMenuRequested(contextMenuEvent -> menu.show((Node) contextMenuEvent.getSource(), contextMenuEvent.getScreenX(), contextMenuEvent.getScreenY()));
 
-        /**
+        /*
          * Register click listener.
          */
         EventHandler<MouseEvent> overHandler = mouseEvent -> setUnderline(true);

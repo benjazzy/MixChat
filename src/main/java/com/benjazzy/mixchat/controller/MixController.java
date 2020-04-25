@@ -1,5 +1,6 @@
 package com.benjazzy.mixchat.controller;
 
+import com.benjazzy.mixchat.DataModel;
 import com.benjazzy.mixchat.oauth.MixOauth;
 import com.benjazzy.mixchat.preferences.MixPreferences;
 import com.mixer.api.MixerAPI;
@@ -38,8 +39,11 @@ public class MixController {
     @FXML
     private Tab AddTab;
 
+    private DataModel dataModel;
+
     public MixController() {
         mixPreferences = new MixPreferences();
+        dataModel = new DataModel(this);
     }
 
     private MixerAPI mixer;
@@ -220,12 +224,12 @@ public class MixController {
      */
     public void Connect(String channelName) throws InterruptedException, ExecutionException {
         if (token == null) {
-            /** Gets an Oauth2 access token from MixOauth. */
+            /* Gets an Oauth2 access token from MixOauth. */
             MixOauth oauth = new MixOauth();
             token = oauth.getAccessToken();
         }
 
-        /** Authenticates with Mixer using the Oauth2 token. */
+        /* Authenticates with Mixer using the Oauth2 token. */
         mixer = new MixerAPI("3721d6b1332a6db44a22ab5b71ae8e34ae187ee995b38f1a", token);
         try {
             mixer.use(ChannelsService.class).findOneByToken(channelName).get();
