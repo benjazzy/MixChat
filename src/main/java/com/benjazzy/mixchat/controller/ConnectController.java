@@ -1,27 +1,22 @@
 package com.benjazzy.mixchat.controller;
 
-import com.benjazzy.mixchat.MixUI;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
-import javafx.fxml.FXMLLoader;
 import javafx.scene.control.Button;
-import javafx.scene.control.Tab;
 import javafx.scene.control.TextField;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
-import javafx.scene.layout.Pane;
 import javafx.stage.Stage;
 
-import java.io.IOException;
 import java.util.concurrent.ExecutionException;
 
 public class ConnectController {
     private MixController mixController;
 
     @FXML
-    private TextField connectWindowField;   /** TextField containing the name of the channel to connect to. */
+    private TextField connectWindowField;   /* TextField containing the name of the channel to connect to. */
     @FXML
-    private Button connectWindowDone;       /** Button to connect to chat specified in connectWindowField. */
+    private Button connectWindowDone;       /* Button to connect to chat specified in connectWindowField. */
 
     /**
      * Sets this instance of MixController

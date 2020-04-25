@@ -1,5 +1,6 @@
 package com.benjazzy.mixchat.controller;
 
+import com.benjazzy.mixchat.DataModel;
 import com.benjazzy.mixchat.MixChat;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
@@ -23,6 +24,7 @@ public class ChatController {
     private MixChat mixChat;
     private String channelName;
     private Text liveText;
+    private DataModel dataModel;
 
     @FXML
     private VBox Root;
@@ -44,6 +46,10 @@ public class ChatController {
     private HBox LiveBar;
     @FXML
     private Circle LiveCircle;
+
+    public ChatController(DataModel dataModel) {
+        this.dataModel = dataModel;
+    }
 
     @FXML
     public void initialize()

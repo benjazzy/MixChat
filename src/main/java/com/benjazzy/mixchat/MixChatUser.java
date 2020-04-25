@@ -3,16 +3,15 @@ package com.benjazzy.mixchat;
 import com.mixer.api.resource.MixerUser;
 import javafx.scene.paint.Color;
 
-import java.util.Comparator;
 import java.util.List;
 
 /**
  * Used to store information on the connected users.
  */
 public class MixChatUser {
-    private int id;                         /** User id. */
-    private String userName;                /** Username. */
-    private List<MixerUser.Role> roleList;  /** List of user roles. */
+    private int id;                         /* User id. */
+    private String userName;                /* Username. */
+    private List<MixerUser.Role> roleList;  /* List of user roles. */
 
     /**
      * @param id        Id of the new user.

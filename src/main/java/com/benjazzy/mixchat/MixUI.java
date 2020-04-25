@@ -20,9 +20,9 @@ public class MixUI extends Application {
     private static MixUI single_instance = null;
 
     private List<MixChat> chats = new LinkedList();
-    private MixChat chat;                                   /** Handles the Mixer API. */
-    private static Pane root;                               /** Root pane of the main menu. */
-    private FXMLLoader loader;                              /** FXML loader of the root Pane. */
+    private MixChat chat;                                   /* Handles the Mixer API. */
+    private static Pane root;                               /* Root pane of the main menu. */
+    private FXMLLoader loader;                              /* FXML loader of the root Pane. */
 
     /**
      * Set single_instance to itself.
@@ -44,7 +44,7 @@ public class MixUI extends Application {
     @Override
     public void start(Stage stage) throws IOException {
 
-        /**
+        /*
          * Loads the javafx configuration from the resources/MixChat.fxml.
          */
         loader = new FXMLLoader();
@@ -62,7 +62,7 @@ public class MixUI extends Application {
         // Display the Stage
         stage.show();
 
-        /**
+        /*
          * Setup the program to disconnect from the Mixer API and close on exit.
          */
         stage.setOnCloseRequest(t -> {
