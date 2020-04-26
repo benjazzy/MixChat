@@ -294,6 +294,42 @@ public class MixController {
         }
     }
 
+    @FXML
+    private void LogoutWindow() {
+        Pane root;
+        try {
+            FXMLLoader loader = new FXMLLoader();
+            // Path to the FXML File
+            loader.setLocation(getClass().getResource("/Logout.fxml"));
+            //Manually set the javafx controller factory so that we can pass arguments to the constructor.
+            Callback<Class<?>, Object> settingsFactory = type -> {
+                if (type == LogoutController.class) {
+                    return new LogoutController(this);
+                } else {
+                    try {
+                        return type.newInstance() ; // default behavior - invoke no-arg construtor
+                    } catch (Exception exc) {
+                        System.err.println("Could not create controller for "+type.getName());
+                        throw new RuntimeException(exc);
+                    }
+                }
+            };
+            loader.setControllerFactory(settingsFactory);
+            // Create the Pane and all Details
+            root = loader.load();
+            Stage stage = new Stage();
+            stage.setTitle("Logout");
+            stage.setScene(new Scene(root));
+            stage.show();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void logout() {
+
+    }
+
     public TabPane getConnections() {
         return connections;
     }

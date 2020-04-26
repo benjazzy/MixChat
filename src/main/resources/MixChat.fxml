@@ -32,6 +32,8 @@
                   <MenuItem mnemonicParsing="false" onAction="#Disconnect" text="Disconnect" />
                   <SeparatorMenuItem mnemonicParsing="false" />
                   <MenuItem mnemonicParsing="false" onAction="#Settings" text="Settings" />
+                        <SeparatorMenuItem mnemonicParsing="false"/>
+                        <MenuItem mnemonicParsing="false" onAction="#LogoutWindow" text="Logout"/>
                     </items>
                 </Menu>
                 <Menu mnemonicParsing="false" text="Edit">
