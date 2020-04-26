@@ -1,13 +1,12 @@
 package com.benjazzy.mixchat.controller;
 
-import com.benjazzy.mixchat.oauth.MixOauth;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.stage.Stage;
 
 public class LogoutController {
-    MixController mixController;
+    private MixController mixController;
 
     @FXML
     private Button Done;
@@ -21,13 +20,18 @@ public class LogoutController {
 
     @FXML
     private void Logout(ActionEvent event) {
-        MixOauth oauth = new MixOauth();
-        oauth.logout();
+        mixController.getMixOauth().logout();
+        mixController.disconnectAllTabs(true);
+        mixController.nullToken();
+        close();
     }
 
     @FXML
     private void Cancel(ActionEvent event) {
-        mixController.logout();
+        close();
+    }
+
+    private void close() {
         Stage stage = (Stage)Done.getScene().getWindow();
         stage.close();
     }

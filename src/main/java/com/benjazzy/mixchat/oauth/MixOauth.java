@@ -77,7 +77,13 @@ public class MixOauth {
 	}
 
 	public boolean logout() {
-		return DATA_STORE_FACTORY.getDataDirectory().delete();
+		String[]entries = DATA_STORE_DIR.list();
+		for(String s: entries){
+			File currentFile = new File(DATA_STORE_DIR.getPath(),s);
+			currentFile.delete();
+		}
+		credential.setExpiresInSeconds(0l);
+		return DATA_STORE_DIR.delete();
 	}
 
 	/**

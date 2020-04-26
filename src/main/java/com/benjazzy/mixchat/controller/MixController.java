@@ -28,6 +28,7 @@ import java.util.concurrent.ExecutionException;
 public class MixController {
     private ConnectController connectController;
     private MixPreferences mixPreferences;
+    private MixOauth mixOauth;
 
     private ErrorController errorController;
 
@@ -96,15 +97,18 @@ public class MixController {
     /**
      * Disconnects all open tabs.
      */
-    public void disconnectAllTabs()
+    public void disconnectAllTabs(boolean clearPreferences)
     {
         for (Tab tab : connections.getTabs())
         {
             if (tab != AddTab)
             {
                 getChatController(tab).disconnect();
+                if (clearPreferences)
+                    mixPreferences.removeDefaultChannel(tab.getText());
             }
         }
+        connections.getTabs().remove(0, connections.getTabs().size() - 1);
     }
 
     /**
@@ -221,8 +225,8 @@ public class MixController {
     public void Connect(String channelName) throws InterruptedException, ExecutionException {
         if (token == null) {
             /** Gets an Oauth2 access token from MixOauth. */
-            MixOauth oauth = new MixOauth();
-            token = oauth.getAccessToken();
+            mixOauth = new MixOauth();
+            token = mixOauth.getAccessToken();
         }
 
         /** Authenticates with Mixer using the Oauth2 token. */
@@ -326,12 +330,15 @@ public class MixController {
         }
     }
 
-    public void logout() {
-
-    }
-
     public TabPane getConnections() {
         return connections;
+    }
+    public MixOauth getMixOauth() {
+        return mixOauth;
+    }
+
+    public void nullToken() {
+        token = null;
     }
 
     public MixPreferences getMixPreferences() {

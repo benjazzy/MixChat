@@ -69,7 +69,7 @@ public class MixUI extends Application {
             if (loader != null)
             {
                 MixController controller = loader.getController();
-                controller.disconnectAllTabs();
+                controller.disconnectAllTabs(false);
             }
             Platform.exit();
             System.exit(0);
