@@ -76,6 +76,16 @@ public class MixOauth {
 		return token;
 	}
 
+	public boolean logout() {
+		String[]entries = DATA_STORE_DIR.list();
+		for(String s: entries){
+			File currentFile = new File(DATA_STORE_DIR.getPath(),s);
+			currentFile.delete();
+		}
+		credential.setExpiresInSeconds(0l);
+		return DATA_STORE_DIR.delete();
+	}
+
 	/**
 	 * Authorizes MixChat application to access user's account.
 	 *
@@ -94,5 +104,4 @@ public class MixOauth {
 				.setPort(OAuth2ClientCredentials.PORT).build();
 		return new AuthorizationCodeInstalledApp(flow, receiver).authorize("user");
 	}
-
 }
