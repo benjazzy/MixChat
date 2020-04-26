@@ -1,6 +1,5 @@
 package com.benjazzy.mixchat.controller;
 
-import com.benjazzy.mixchat.DataModel;
 import com.benjazzy.mixchat.oauth.MixOauth;
 import com.benjazzy.mixchat.preferences.MixPreferences;
 import com.mixer.api.MixerAPI;
@@ -39,11 +38,8 @@ public class MixController {
     @FXML
     private Tab AddTab;
 
-    private DataModel dataModel;
-
     public MixController() {
         mixPreferences = new MixPreferences();
-        dataModel = new DataModel(this);
     }
 
     private MixerAPI mixer;
