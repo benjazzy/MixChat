@@ -229,7 +229,7 @@ public class MixController {
             token = mixOauth.getAccessToken();
         }
 
-        /** Authenticates with Mixer using the Oauth2 token. */
+        /* Authenticates with Mixer using the Oauth2 token. */
         mixer = new MixerAPI("3721d6b1332a6db44a22ab5b71ae8e34ae187ee995b38f1a", token);
         try {
             mixer.use(ChannelsService.class).findOneByToken(channelName).get();
