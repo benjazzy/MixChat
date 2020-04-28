@@ -26,14 +26,14 @@
             <menus>
                 <Menu mnemonicParsing="true" text="_File">
                     <items>
-                        <MenuItem mnemonicParsing="true" text="C_lose" />
+                        <MenuItem fx:id="CloseItem" mnemonicParsing="true" text="C_lose" />
                   <SeparatorMenuItem mnemonicParsing="false" />
-                        <MenuItem fx:id="connectMenu" mnemonicParsing="true" onAction="#ConnectMenu" text="_Connect" />
-                  <MenuItem mnemonicParsing="true" onAction="#Disconnect" text="_Disconnect" />
+                        <MenuItem fx:id="ConnectItem" mnemonicParsing="true" onAction="#ConnectMenu" text="_Connect" />
+                  <MenuItem fx:id="DisconnectItem" mnemonicParsing="true" onAction="#Disconnect" text="_Disconnect" />
                   <SeparatorMenuItem mnemonicParsing="false" />
-                  <MenuItem mnemonicParsing="true" onAction="#Settings" text="_Settings" />
+                  <MenuItem fx:id="SettingsItem" mnemonicParsing="true" onAction="#Settings" text="_Settings" />
                         <SeparatorMenuItem mnemonicParsing="false"/>
-                        <MenuItem mnemonicParsing="true" onAction="#LogoutWindow" text="_Logout"/>
+                        <MenuItem fx:id="LogoutItem" mnemonicParsing="true" onAction="#LogoutWindow" text="_Logout"/>
                     </items>
                 </Menu>
                 <Menu mnemonicParsing="true" text="_Edit">

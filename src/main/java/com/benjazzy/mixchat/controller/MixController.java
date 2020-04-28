@@ -12,8 +12,12 @@ import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
+import javafx.scene.control.MenuItem;
 import javafx.scene.control.Tab;
 import javafx.scene.control.TabPane;
+import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyCodeCombination;
+import javafx.scene.input.KeyCombination;
 import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.Pane;
 import javafx.stage.Stage;
@@ -38,6 +42,17 @@ public class MixController {
     private TabPane connections;
     @FXML
     private Tab AddTab;
+    @FXML
+    private MenuItem CloseItem;
+    @FXML
+    private MenuItem ConnectItem;
+    @FXML
+    private MenuItem DisconnectItem;
+    @FXML
+    private MenuItem SettingsItem;
+    @FXML
+    private MenuItem LogoutItem;
+
 
     public MixController() {
         mixPreferences = new MixPreferences();
@@ -51,6 +66,8 @@ public class MixController {
 
     @FXML
     public void initialize() {
+        setupHotkeys();
+
         for (String channelName : mixPreferences.getDefaultChannels()) {
             try {
                 Connect(channelName);
@@ -328,6 +345,13 @@ public class MixController {
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    private void setupHotkeys() {
+        ConnectItem.setAccelerator(new KeyCodeCombination(KeyCode.N, KeyCombination.CONTROL_DOWN));
+        DisconnectItem.setAccelerator(new KeyCodeCombination(KeyCode.D, KeyCombination.CONTROL_DOWN));
+        SettingsItem.setAccelerator(new KeyCodeCombination(KeyCode.S, KeyCombination.CONTROL_DOWN));
+        LogoutItem.setAccelerator(new KeyCodeCombination(KeyCode.L, KeyCombination.CONTROL_DOWN));
     }
 
     public TabPane getConnections() {
