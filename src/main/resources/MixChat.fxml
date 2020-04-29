@@ -24,24 +24,24 @@
       </TabPane>
         <MenuBar prefWidth="600.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
             <menus>
-                <Menu mnemonicParsing="false" text="File">
+                <Menu mnemonicParsing="true" text="_File">
                     <items>
-                        <MenuItem mnemonicParsing="false" text="Close" />
+                        <MenuItem fx:id="CloseItem" mnemonicParsing="true" text="C_lose" />
                   <SeparatorMenuItem mnemonicParsing="false" />
-                        <MenuItem fx:id="connectMenu" mnemonicParsing="false" onAction="#ConnectMenu" text="Connect" />
-                  <MenuItem mnemonicParsing="false" onAction="#Disconnect" text="Disconnect" />
+                        <MenuItem fx:id="ConnectItem" mnemonicParsing="true" onAction="#ConnectMenu" text="_Connect" />
+                  <MenuItem fx:id="DisconnectItem" mnemonicParsing="true" onAction="#Disconnect" text="_Disconnect" />
                   <SeparatorMenuItem mnemonicParsing="false" />
-                  <MenuItem mnemonicParsing="false" onAction="#Settings" text="Settings" />
+                  <MenuItem fx:id="SettingsItem" mnemonicParsing="true" onAction="#Settings" text="_Settings" />
                         <SeparatorMenuItem mnemonicParsing="false"/>
-                        <MenuItem mnemonicParsing="false" onAction="#LogoutWindow" text="Logout"/>
+                        <MenuItem fx:id="LogoutItem" mnemonicParsing="true" onAction="#LogoutWindow" text="_Logout"/>
                     </items>
                 </Menu>
-                <Menu mnemonicParsing="false" text="Edit">
+                <Menu mnemonicParsing="true" text="_Edit">
                     <items>
                         <MenuItem mnemonicParsing="false" text="Delete" />
                     </items>
                 </Menu>
-                <Menu mnemonicParsing="false" text="Help">
+                <Menu mnemonicParsing="true" text="_Help">
                     <items>
                         <MenuItem mnemonicParsing="false" text="About" />
                     </items>

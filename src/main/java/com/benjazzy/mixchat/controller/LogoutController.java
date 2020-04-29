@@ -4,6 +4,8 @@ import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.stage.Stage;
+import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyEvent;
 
 public class LogoutController {
     private MixController mixController;
@@ -29,6 +31,20 @@ public class LogoutController {
     @FXML
     private void Cancel(ActionEvent event) {
         close();
+    }
+
+    @FXML
+    private void LogoutHandleKey(KeyEvent event) {
+	if (event.getCode() == KeyCode.ENTER) {
+	   Logout(new ActionEvent()); 
+        }	
+    }
+
+    @FXML
+    private void CancelHandleKey(KeyEvent event) {
+	if (event.getCode() == KeyCode.ENTER) {
+	   close(); 
+        }	
     }
 
     private void close() {
