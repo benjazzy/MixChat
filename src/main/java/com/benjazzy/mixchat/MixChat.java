@@ -105,6 +105,16 @@ public class MixChat {
      * This timer will update chat every 5 minutes if those events aren't triggered.
      */
     private Timer userListTimer = new Timer();
+
+    /**
+     * User and roles of the current user.
+     */
+    private MixChatUser currentUser;
+
+    /**
+     * True if the current user has moderator permission in the current chat.
+     */
+    private boolean hasPermissions = false;
     //endregion
 
     //region FXML variables.
@@ -220,9 +230,9 @@ public class MixChat {
         mixerUsername = user.username;
         userId = user.id;
 
-
         /* Set chatConnectable to use the current chat. */
         chatConnectible = chat.connectable(mixer);
+
         /*
          * Authenticate with mixer.
          * If successfully authenticated to the chat then:
@@ -257,10 +267,9 @@ public class MixChat {
                             var1.printStackTrace();
                         }
                     });
+
             /* Registers events for incoming messages as well as user join and leave */
             registerIncomingChat();
-            /* Updates the list of current viewers. */
-            updateUsers(chatId);
 
             // Link constellation and mixer.
             constellation = new MixerConstellation();
@@ -297,6 +306,21 @@ public class MixChat {
             } catch (Exception e) {
                 e.printStackTrace();
             }
+
+            /* Updates the list of current viewers. */
+            updateUsers(chatId);
+
+            /* Update the current user from the list of users. */
+            for (MixChatUser mixChatUser : users) {
+                if (user.id == mixChatUser.getId()) {
+                    currentUser = mixChatUser;
+                    if (currentUser.getRoleList().contains(MixerUser.Role.MOD) || currentUser.getRoleList().contains(MixerUser.Role.OWNER)) {
+                        hasPermissions = true;
+                    }
+                    break;
+                }
+            }
+
         } else {
             System.out.println("Failed to connect");
         }
@@ -716,6 +740,26 @@ public class MixChat {
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+    /**
+     * Checks if the current user can delete a specific message.
+     *
+     * @param uuid uuid of the selected message.
+     * @return Returns if the current user is able to delete the message.
+     */
+    public boolean canDeleteMessage(String uuid) {
+        for (Node messageNode : chatBox.getChildren()) {
+            if (messageNode instanceof MixMessage) {
+                MixMessage message = (MixMessage) messageNode;
+                if (message.getUuid().equals(uuid)) {
+                    if (message.getUser().equals(currentUser.getUserName())) {
+                        return true;
+                    }
+                }
+            }
+        }
+        return hasPermissions;
     }
 
     private void sendWhisper(String message) {

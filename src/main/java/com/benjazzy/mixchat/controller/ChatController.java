@@ -77,9 +77,10 @@ public class ChatController {
         mixChat.disconnect();
     }
 
-    public void deleteMessage(String uuid)
-    {
-        mixChat.deleteMessage(uuid);
+    public void deleteMessage(String uuid) {
+        if (mixChat.canDeleteMessage(uuid)) {
+            mixChat.deleteMessage(uuid);
+        }
     }
 
     public void setLive(boolean live)
