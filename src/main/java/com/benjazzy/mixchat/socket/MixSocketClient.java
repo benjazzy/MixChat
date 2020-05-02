@@ -1,5 +1,6 @@
-package com.benjazzy.mixchat;
+package com.benjazzy.mixchat.socket;
 
+import com.benjazzy.mixchat.MixSocketReply;
 import org.java_websocket.client.WebSocketClient;
 import org.java_websocket.handshake.ServerHandshake;
 import org.json.JSONObject;

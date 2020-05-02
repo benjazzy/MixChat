@@ -3,6 +3,8 @@ package com.benjazzy.mixchat.controller;
 import com.benjazzy.mixchat.oauth.MixOauth;
 import com.benjazzy.mixchat.preferences.MixPreferences;
 import com.mixer.api.MixerAPI;
+import com.mixer.api.resource.MixerUser;
+import com.mixer.api.resource.constellation.MixerConstellation;
 import com.mixer.api.services.impl.ChannelsService;
 import javafx.application.Platform;
 import javafx.event.ActionEvent;
@@ -24,6 +26,8 @@ import javafx.stage.Stage;
 import javafx.util.Callback;
 
 import java.io.IOException;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.concurrent.ExecutionException;
 
 /**
@@ -53,6 +57,7 @@ public class MixController {
     @FXML
     private MenuItem LogoutItem;
 
+    private List<ChatController> chatControllers  = new LinkedList<>();
 
     public MixController() {
         mixPreferences = new MixPreferences();
@@ -63,6 +68,7 @@ public class MixController {
      * The connected variable is used to store whether the chat is connected.
      */
     private String token;
+
 
     @FXML
     public void initialize() {
@@ -109,6 +115,10 @@ public class MixController {
                 getChatController(tab).deleteMessage(uuid);
             }
         }
+
+//        for (ChatController controller : chatControllers) {
+//            controller.deleteMessage(uuid);
+//        }
     }
 
     /**
@@ -153,9 +163,10 @@ public class MixController {
      */
     private ChatController getChatController(Tab tab)
     {
-        Scene scene = tab.getContent().getScene();
-        FXMLLoader loader = (FXMLLoader)scene.getUserData();
-        return loader.getController();
+//        Scene scene = tab.getContent().getScene();
+//        FXMLLoader loader = (FXMLLoader)scene.getUserData();
+//        return loader.getController();
+        return (ChatController)tab.getUserData();
     }
 
     /**
@@ -267,6 +278,7 @@ public class MixController {
         try {
             root = loader.load();
             ChatController chatController = loader.getController();
+            chatControllers.add(chatController);
             Thread thread = new Thread(() -> {
                 chatController.connect(channelName, token);
             });
@@ -275,6 +287,7 @@ public class MixController {
             Platform.runLater(() -> {
                 Scene scene = root.getScene();
                 scene.setUserData(loader);
+                chat.setUserData(chatController);
             });
             AnchorPane anchorPane = new AnchorPane();
             AnchorPane.setTopAnchor(root, 0.0);
@@ -323,7 +336,7 @@ public class MixController {
             // Path to the FXML File
             loader.setLocation(getClass().getResource("/Logout.fxml"));
             //Manually set the javafx controller factory so that we can pass arguments to the constructor.
-            Callback<Class<?>, Object> settingsFactory = type -> {
+            Callback<Class<?>, Object> logoutFactory = type -> {
                 if (type == LogoutController.class) {
                     return new LogoutController(this);
                 } else {
@@ -335,7 +348,7 @@ public class MixController {
                     }
                 }
             };
-            loader.setControllerFactory(settingsFactory);
+            loader.setControllerFactory(logoutFactory);
             // Create the Pane and all Details
             root = loader.load();
             Stage stage = new Stage();

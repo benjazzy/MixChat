@@ -2,7 +2,7 @@ package com.benjazzy.mixchat;
 
 import com.benjazzy.mixchat.controller.ChatController;
 import com.benjazzy.mixchat.helper.ConsoleColors;
-import com.benjazzy.mixchat.oauth.MixOauth;
+import com.benjazzy.mixchat.socket.*;
 import com.mixer.api.MixerAPI;
 import com.mixer.api.resource.MixerUser;
 import com.mixer.api.resource.channel.MixerChannel;
@@ -49,15 +49,11 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import javax.annotation.Nullable;
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLSocketFactory;
 import java.awt.*;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.*;
-import java.security.KeyManagementException;
-import java.security.NoSuchAlgorithmException;
 import java.text.SimpleDateFormat;
 import java.util.List;
 import java.util.*;
@@ -110,6 +106,8 @@ public class MixChat {
      * User and roles of the current user.
      */
     private MixChatUser currentUser;
+
+    private MixChatSocket mixChatSocket;
 
     /**
      * True if the current user has moderator permission in the current chat.
@@ -247,6 +245,14 @@ public class MixChat {
                             System.out.println("Connected");
                             connected = true;
 
+                            mixChatSocket = new MixChatSocket(chatId);
+                            mixChatSocket.auth(channel.id, userId, new MixSocketReply() {
+                                @Override
+                                public void onReply(JSONObject reply) {
+                                    handleSocketReply(reply);
+                                }
+                            });
+
                             /* Get previous 50 messages and update the terminal and chatBox */
                             chatConnectible.send(GetHistoryMethod.forCount(50), new ReplyHandler<ChatHistoryReply>() {
                                 @Override
@@ -359,7 +365,7 @@ public class MixChat {
      */
     public List<Node> formatChatBox(IncomingMessageEvent event) {
         List<Node> textList = new ArrayList<>();                            /* List of Text objects to be returned. */
-        MixMessage username = new MixMessage(event.data.userName, event.data.id, event.data.userName); /* Username of the user that sent the message. */
+        MixMessage username = new MixMessage(event.data.userName, event.data.id, event.data.userName, this); /* Username of the user that sent the message. */
         List<Node> message = new LinkedList<>();                            /* List of message elements from event. */
 
         /*
@@ -367,7 +373,7 @@ public class MixChat {
          */
         SimpleDateFormat formatter = new SimpleDateFormat("HH:mm:ss");
         Date date = new Date();
-        MixMessage dateText = new MixMessage(formatter.format(date), event.data.id, event.data.userName);
+        MixMessage dateText = new MixMessage(formatter.format(date), event.data.id, event.data.userName, this);
 
         /*
          * Iterates the message elements and adds them to the message list.
@@ -409,7 +415,7 @@ public class MixChat {
         textList.add(dateText);
         textList.add(username);
         if (event.data.message.meta.whisper) {
-            MixMessage to = new MixMessage(String.format(" %s: ", mixerUsername), event.data.id, event.data.userName);
+            MixMessage to = new MixMessage(String.format(" %s: ", mixerUsername), event.data.id, event.data.userName, this);
             Text separator = new Text(">");
             separator.setFont(Font.font("Verdana", FontPosture.ITALIC, 12));
             to.setFont(Font.font("Verdana", FontPosture.ITALIC, 12));
@@ -441,9 +447,9 @@ public class MixChat {
          */
         for (IncomingMessageData messageEvent : event.messages) {
             /* Add a new line to the beginning to separate it from the previous line. */
-            textList.add(new MixMessage(System.lineSeparator(), messageEvent.id, messageEvent.userName));
+            textList.add(new MixMessage(System.lineSeparator(), messageEvent.id, messageEvent.userName, this));
             /* Gets the username from messageEvent. */
-            MixMessage username = new MixMessage(messageEvent.userName, messageEvent.id, messageEvent.userName);
+            MixMessage username = new MixMessage(messageEvent.userName, messageEvent.id, messageEvent.userName, this);
             /* List of message elements from event. */
             List<Node> message = new LinkedList<>();
 
@@ -544,13 +550,13 @@ public class MixChat {
         }
         // Tag(@)
         else if (textComponent.type.name().equals("TAG")) {
-            MixMessage m = new MixMessage(textComponent.text, event.id, event.userName);
+            MixMessage m = new MixMessage(textComponent.text, event.id, event.userName, this);
             m.setFill(Color.BLUE);
             message.add(m);
         }
         // Text.
         else {
-            MixMessage m = new MixMessage(textComponent.text, event.id, event.userName);
+            MixMessage m = new MixMessage(textComponent.text, event.id, event.userName, this);
             if (!m.getText().contains("�\u200D♂") && !m.getText().contains("\uD83D\uDE4B\uD83C\uDFFB\u200D♂️") && !m.getText().isEmpty())
                 message.add(m);
         }
@@ -674,6 +680,8 @@ public class MixChat {
         return String.format("%s %s%s%s: %s", formatter.format(date), usernameFormat, username,
                 ConsoleColors.RESET, message);
     }
+
+
     //endregion
 
     //region Api methods.
@@ -684,8 +692,12 @@ public class MixChat {
      */
     public void sendMessage(String message) {
         if (message.startsWith("/")) {
-            if ("/whisper".contains(message.split(" ")[0])) {
+            String command = message.split(" ")[0];
+            if ("/whisper".contains(command)) {
                 sendWhisper(message);
+            }
+            else if ("/clear".contains(command)) {
+                mixChatSocket.clear();
             }
         } else
             chatConnectible.send(ChatSendMethod.of(message));
@@ -713,33 +725,36 @@ public class MixChat {
      * @param uuid Id of the message to be deleted.
      */
     public void deleteMessage(String uuid) {
-        try {
-            URL url = new URL("https://mixer.com/api/v1/chats/" + chatId);      /* The url of the chat endpoint. */
-            String authkey = getAuthkey(url);                                      /* Get the authkey to be used to authenticate with the API. */
+//        try {
+//            URL url = new URL("https://mixer.com/api/v1/chats/" + chatId);      /* The url of the chat endpoint. */
+//            String authkey = getAuthkey(url);                                      /* Get the authkey to be used to authenticate with the API. */
+//
+//            /*
+//             * Create a new MixSocket where when successfully authenticated delete the message.
+//             */
+//            socket = getSocket(url, new MixSocketReply() {
+//                @Override
+//                public void onReply(JSONObject reply) {
+//                    System.out.println(reply);
+//                    if (reply.has("data")) {
+//                        Object data = reply.get("data");
+//                        if (data instanceof JSONObject) {
+//                            JSONObject jData = (JSONObject) data;
+//                            if (jData.has("authenticated")) {
+//                                if (jData.getBoolean("authenticated")) {
+//                                    socketDelete(socket, uuid);
+//                                }
+//                            }
+//                        }
+//                    }
+//                }
+//            });
+//            socketAuth(socket, authkey, chatId, userId);    /* Authenticate with the API and delete the message if successful. */
+//        } catch (Exception e) {
+//            e.printStackTrace();
+//        }
 
-            /*
-             * Create a new MixSocket where when successfully authenticated delete the message.
-             */
-            socket = getSocket(url, new MixSocketReply() {
-                @Override
-                public void onReply(JSONObject reply) {
-                    if (reply.has("data")) {
-                        Object data = reply.get("data");
-                        if (data instanceof JSONObject) {
-                            JSONObject jData = (JSONObject) data;
-                            if (jData.has("authenticated")) {
-                                if (jData.getBoolean("authenticated")) {
-                                    socketDelete(socket, uuid);
-                                }
-                            }
-                        }
-                    }
-                }
-            });
-            socketAuth(socket, authkey, chatId, userId);    /* Authenticate with the API and delete the message if successful. */
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        mixChatSocket.delete(uuid);
     }
 
     /**
@@ -931,155 +946,25 @@ public class MixChat {
     //endregion
 
     //region Socket.
-    /**
-     * Get the authkey from the specified endpoint.
-     *
-     * @param url Url of the endpoint to get the authkey from.  https://mixer.com/api/v1/chats/{chatid}.
-     * @return Returns the authkey from the endpoint.
-     * @throws IOException
-     */
-    private String getAuthkey(URL url) throws IOException {
-        MixOauth oauth = new MixOauth();                                    /* Get a hold of the Oauth token. */
+    private void handleSocketReply(JSONObject reply) {
+        System.out.println(reply);
+        if (reply.has("type")) {
+            switch (reply.get("type").toString()) {
+                case "event":
+                    switch (reply.get("event").toString()) {
+                        case "ClearMessages":
+                            handleClearMessages(reply);
+                            break;
 
-        /*
-         * Make http GET request to url and read it into response.
-         */
-        // Sending get request
-        HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-
-        conn.setRequestProperty("Authorization", "Bearer " + oauth.getAccessToken());
-        //e.g. bearer token= eyJhbGciOiXXXzUxMiJ9.eyJzdWIiOiPyc2hhcm1hQHBsdW1zbGljZS5jb206OjE6OjkwIiwiZXhwIjoxNTM3MzQyNTIxLCJpYXQiOjE1MzY3Mzc3MjF9.O33zP2l_0eDNfcqSQz29jUGJC-_THYsXllrmkFnk85dNRbAw66dyEKBP5dVcFUuNTA8zhA83kk3Y41_qZYx43T
-
-        conn.setRequestProperty("Content-Type", "application/json");
-        conn.setRequestMethod("GET");
-
-
-        BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()));
-        String output;
-
-        StringBuffer response = new StringBuffer();
-        while ((output = in.readLine()) != null) {
-            response.append(output);
+                    }
+                    break;
+            }
         }
-
-        in.close();
-
-        /*
-         * Parse response as json and return authkey key.
-         */
-        JSONObject obj = new JSONObject(response.toString());
-        return obj.getString("authkey");
     }
 
-    /**
-     * Get the websocket endpoint from the specified http endpoint.  https://mixer.com/api/v1/chats/{chatid}.
-     *
-     * @param url Url of the endpoint to get the websocket endpoint from.
-     * @return The websocket endpoint from the http endpoint.
-     * @throws IOException
-     */
-    private String getEndpoints(URL url) throws IOException {
-        MixOauth oauth = new MixOauth();                    /* Get a hold of the Oauth token. */
+    private void handleClearMessages(JSONObject reply) {
+        JSONObject data = reply.getJSONObject("data");
 
-        /*
-         * Make http GET request to url and read it into response.
-         */
-        // Sending get request
-        HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-
-        conn.setRequestProperty("Authorization", "Bearer " + oauth.getAccessToken());
-        //e.g. bearer token= eyJhbGciOiXXXzUxMiJ9.eyJzdWIiOiPyc2hhcm1hQHBsdW1zbGljZS5jb206OjE6OjkwIiwiZXhwIjoxNTM3MzQyNTIxLCJpYXQiOjE1MzY3Mzc3MjF9.O33zP2l_0eDNfcqSQz29jUGJC-_THYsXllrmkFnk85dNRbAw66dyEKBP5dVcFUuNTA8zhA83kk3Y41_qZYx43T
-
-        conn.setRequestProperty("Content-Type", "application/json");
-        conn.setRequestMethod("GET");
-
-
-        BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()));
-        String output;
-
-        StringBuffer response = new StringBuffer();
-        while ((output = in.readLine()) != null) {
-            response.append(output);
-        }
-
-        in.close();
-
-        /*
-         * Parse response as json and return first element in endpoints array.
-         */
-        JSONObject obj = new JSONObject(response.toString());
-        JSONArray array = obj.getJSONArray("endpoints");
-        return array.getString(0);
-    }
-
-    /**
-     * Gets a new ssl websocket
-     *
-     * @param url   Websocket endpoint and port to connect to.
-     * @param reply MixSocketReply to reply to.
-     * @return Returns a MixSocket that can send messages to the Mixer API.
-     * @throws KeyManagementException
-     * @throws NoSuchAlgorithmException
-     * @throws IOException
-     * @throws URISyntaxException
-     * @throws InterruptedException
-     */
-    private MixSocketClient getSocket(URL url, MixSocketReply reply) throws KeyManagementException, NoSuchAlgorithmException, IOException, URISyntaxException, InterruptedException {
-        MixSocketClient socket = new MixSocketClient(new URI(getEndpoints(url)), reply);    /* Create new MixSocket using url and MixSocketReply reply. */
-
-        /*
-         * Setup Socket to user ssl.
-         */
-        SSLContext sslContext = null;
-        sslContext = SSLContext.getInstance("TLS");
-        sslContext.init(null, null, null);
-
-        SSLSocketFactory factory = sslContext.getSocketFactory();// (SSLSocketFactory) SSLSocketFactory.getDefault();
-
-        socket.setSocket(factory.createSocket());
-
-
-        socket.connectBlocking();   /* Connect to socket and block until connected. */
-
-        return socket;
-    }
-
-    /**
-     * Send the auth message to specified websocket.
-     *
-     * @param socket    Websocket to send the auth message over.
-     * @param authkey   Authkey from getAuthkey() to pass with auth message.
-     * @param channelID ID of the channel to authenticate with.
-     * @param userID    ID of the user to authenticate as.
-     */
-    private void socketAuth(MixSocketClient socket, String authkey, int channelID, int userID) {
-        /*
-         * Format json request int JSONObject
-         */
-        JSONObject auth = new JSONObject("{\n" +
-                "  \"type\": \"method\",\n" +
-                "  \"method\": \"auth\",\n" +
-                "  \"arguments\": [" + channelID + ", " + userID + ", \"" + authkey + "\"],\n" +
-                "  \"id\": 0\n" +
-                "}");
-        socket.send(auth.toString());
-    }
-
-    /**
-     * Send the delete message message over the websocket.  Must send the auth message first.
-     *
-     * @param socket Websocket to send the delete message over.
-     * @param uuid   UUID of the message to be deleted.
-     */
-    private void socketDelete(MixSocketClient socket, String uuid) {
-        JSONObject deleteKey = new JSONObject("{\n" +
-                "  \"type\": \"method\",\n" +
-                "  \"method\": \"deleteMessage\",\n" +
-                "  \"arguments\": [\"" + uuid + "\"],\n" +
-                "  \"id\": 10\n" +
-                "}");
-
-        socket.send(deleteKey.toString());
     }
     //endregion
 
