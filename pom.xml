@@ -21,7 +21,7 @@
 		<repository>
 			<id>github</id>
 			<name>GitHub Mixer Client Java Apache Maven Packages</name>
-			<url>https://maven.pkg.github.com/mixer/beam-client-java</url>
+			<url>https://maven.pkg.github.com/benjazzy/beam-client-java</url>
 		</repository>
 	</repositories>
 
@@ -35,7 +35,7 @@
 		<dependency>
 			<groupId>com.mixer</groupId>
 			<artifactId>api</artifactId>
-			<version>6.0.0</version>
+			<version>6.0.1</version>
 		</dependency>
 		<dependency>
 			<groupId>com.google.oauth-client</groupId>
