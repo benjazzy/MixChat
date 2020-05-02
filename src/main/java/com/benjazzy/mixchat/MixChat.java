@@ -7,16 +7,10 @@ import com.mixer.api.MixerAPI;
 import com.mixer.api.resource.MixerUser;
 import com.mixer.api.resource.channel.MixerChannel;
 import com.mixer.api.resource.chat.MixerChat;
-import com.mixer.api.resource.chat.events.DeleteMessageEvent;
-import com.mixer.api.resource.chat.events.IncomingMessageEvent;
-import com.mixer.api.resource.chat.events.UserJoinEvent;
-import com.mixer.api.resource.chat.events.UserLeaveEvent;
+import com.mixer.api.resource.chat.events.*;
 import com.mixer.api.resource.chat.events.data.IncomingMessageData;
 import com.mixer.api.resource.chat.events.data.MessageComponent.MessageTextComponent;
-import com.mixer.api.resource.chat.methods.AuthenticateMessage;
-import com.mixer.api.resource.chat.methods.ChatSendMethod;
-import com.mixer.api.resource.chat.methods.GetHistoryMethod;
-import com.mixer.api.resource.chat.methods.WhisperMethod;
+import com.mixer.api.resource.chat.methods.*;
 import com.mixer.api.resource.chat.replies.AuthenticationReply;
 import com.mixer.api.resource.chat.replies.ChatHistoryReply;
 import com.mixer.api.resource.chat.replies.ReplyHandler;
@@ -697,7 +691,8 @@ public class MixChat {
                 sendWhisper(message);
             }
             else if ("/clear".contains(command)) {
-                mixChatSocket.clear();
+                //mixChatSocket.clear();
+                chatConnectible.send(ClearMessagesMethod.of());
             }
         } else
             chatConnectible.send(ChatSendMethod.of(message));
@@ -754,7 +749,8 @@ public class MixChat {
 //            e.printStackTrace();
 //        }
 
-        mixChatSocket.delete(uuid);
+        //mixChatSocket.delete(uuid);
+        chatConnectible.send(DeleteMessageMethod.of(uuid));
     }
 
     /**
@@ -913,6 +909,9 @@ public class MixChat {
                     updateUsers(chatId);
                 }
             }, 300000, 300000);
+        });
+        chatConnectible.on(ClearMessagesEvent.class, cEvent -> {
+            System.out.println("CLEAR!");
         });
 
         userListTimer.schedule(new TimerTask() {

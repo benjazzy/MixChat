@@ -3,6 +3,8 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/MixChat.iml" filepath="$PROJECT_DIR$/MixChat.iml" />
+      <module fileurl="file://$PROJECT_DIR$/../MixParent/MixParent.iml" filepath="$PROJECT_DIR$/../MixParent/MixParent.iml" />
+      <module fileurl="file://$PROJECT_DIR$/../beam-client-java/api.iml" filepath="$PROJECT_DIR$/../beam-client-java/api.iml" />
     </modules>
   </component>
 </project>
