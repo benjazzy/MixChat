@@ -1,0 +1,3 @@
+[submodule "MixClient"]
+	path = MixClient
+	url = https://github.com/benjazzy/MixClient.git
