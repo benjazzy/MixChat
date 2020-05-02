@@ -13,10 +13,7 @@ import com.mixer.api.resource.chat.events.UserJoinEvent;
 import com.mixer.api.resource.chat.events.UserLeaveEvent;
 import com.mixer.api.resource.chat.events.data.IncomingMessageData;
 import com.mixer.api.resource.chat.events.data.MessageComponent.MessageTextComponent;
-import com.mixer.api.resource.chat.methods.AuthenticateMessage;
-import com.mixer.api.resource.chat.methods.ChatSendMethod;
-import com.mixer.api.resource.chat.methods.GetHistoryMethod;
-import com.mixer.api.resource.chat.methods.WhisperMethod;
+import com.mixer.api.resource.chat.methods.*;
 import com.mixer.api.resource.chat.replies.AuthenticationReply;
 import com.mixer.api.resource.chat.replies.ChatHistoryReply;
 import com.mixer.api.resource.chat.replies.ReplyHandler;
@@ -663,7 +660,8 @@ public class MixChat {
             if ("/whisper".contains(message.split(" ")[0])) {
                 sendWhisper(message);
             }
-        } else
+        }
+        else
             chatConnectible.send(ChatSendMethod.of(message));
     }
 
@@ -689,33 +687,7 @@ public class MixChat {
      * @param uuid Id of the message to be deleted.
      */
     public void deleteMessage(String uuid) {
-        try {
-            URL url = new URL("https://mixer.com/api/v1/chats/" + chatId);      /* The url of the chat endpoint. */
-            String authkey = getAuthkey(url);                                      /* Get the authkey to be used to authenticate with the API. */
-
-            /*
-             * Create a new MixSocket where when successfully authenticated delete the message.
-             */
-            socket = getSocket(url, new MixSocketReply() {
-                @Override
-                public void onReply(JSONObject reply) {
-                    if (reply.has("data")) {
-                        Object data = reply.get("data");
-                        if (data instanceof JSONObject) {
-                            JSONObject jData = (JSONObject) data;
-                            if (jData.has("authenticated")) {
-                                if (jData.getBoolean("authenticated")) {
-                                    socketDelete(socket, uuid);
-                                }
-                            }
-                        }
-                    }
-                }
-            });
-            socketAuth(socket, authkey, chatId, userId);    /* Authenticate with the API and delete the message if successful. */
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        chatConnectible.send(DeleteMessageMethod.of(uuid));
     }
 
     private void sendWhisper(String message) {
