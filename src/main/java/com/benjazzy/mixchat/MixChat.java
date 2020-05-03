@@ -1,5 +1,6 @@
 package com.benjazzy.mixchat;
 
+import com.benjazzy.mixchat.commands.Commands;
 import com.benjazzy.mixchat.controller.ChatController;
 import com.benjazzy.mixchat.helper.ConsoleColors;
 import com.benjazzy.mixchat.oauth.MixOauth;
@@ -7,10 +8,8 @@ import com.mixer.api.MixerAPI;
 import com.mixer.api.resource.MixerUser;
 import com.mixer.api.resource.channel.MixerChannel;
 import com.mixer.api.resource.chat.MixerChat;
-import com.mixer.api.resource.chat.events.DeleteMessageEvent;
-import com.mixer.api.resource.chat.events.IncomingMessageEvent;
-import com.mixer.api.resource.chat.events.UserJoinEvent;
-import com.mixer.api.resource.chat.events.UserLeaveEvent;
+import com.mixer.api.resource.chat.events.*;
+import com.mixer.api.resource.chat.events.data.ClearMessagesData;
 import com.mixer.api.resource.chat.events.data.IncomingMessageData;
 import com.mixer.api.resource.chat.events.data.MessageComponent.MessageTextComponent;
 import com.mixer.api.resource.chat.methods.*;
@@ -96,6 +95,8 @@ public class MixChat {
      * Users stores a list of users currently connected to the chat.
      */
     private volatile List<MixChatUser> users = new LinkedList<>();
+
+    private Commands commands = new Commands();
 
     /**
      * In larger channels mixer doesn't send out the user join/leave event.
@@ -349,24 +350,8 @@ public class MixChat {
             message.addAll(formatMessageComponent(i, event.data));
         }
 
-        /*
-         * Colors the username based on the user role in chat.
-         */
-        // Add color to username by user role
-        if (event.data.userRoles.contains(MixerUser.Role.MOD)) {
-            username.setFill(Color.GREEN);
-        } else if (event.data.userRoles.contains(MixerUser.Role.PRO)) {
-            username.setFill(Color.DEEPPINK);
-        } else if (event.data.userRoles.contains(MixerUser.Role.USER)) {
-            username.setFill(Color.SKYBLUE);
-        } else if (event.data.userRoles.contains(MixerUser.Role.OWNER)) {
-        } else if (event.data.userRoles.contains(MixerUser.Role.FOUNDER)) {
-            username.setFill(Color.RED);
-        } else if (event.data.userRoles.contains(MixerUser.Role.STAFF)) {
-            username.setFill(Color.GOLD);
-        } else if (event.data.userRoles.contains(MixerUser.Role.GLOBAL_MOD)) {
-            username.setFill(Color.TEAL);
-        }
+        username.setFill(colorUsername(event.data.userRoles));
+
 
         if (event.data.message.meta.whisper) {
             username.setText(String.format(" %s ", username.getText(), mixerUsername));
@@ -427,23 +412,7 @@ public class MixChat {
                 message.addAll(formatMessageComponent(i, messageEvent));
             }
 
-            /*
-             * Colors the username based on the user role in chat.
-             */
-            if (messageEvent.userRoles.contains(MixerUser.Role.MOD)) {
-                username.setFill(Color.GREEN);
-            } else if (messageEvent.userRoles.contains(MixerUser.Role.PRO)) {
-                username.setFill(Color.DEEPPINK);
-            } else if (messageEvent.userRoles.contains(MixerUser.Role.USER)) {
-                username.setFill(Color.SKYBLUE);
-            } else if (messageEvent.userRoles.contains(MixerUser.Role.OWNER)) {
-            } else if (messageEvent.userRoles.contains(MixerUser.Role.FOUNDER)) {
-                username.setFill(Color.RED);
-            } else if (messageEvent.userRoles.contains(MixerUser.Role.STAFF)) {
-                username.setFill(Color.GOLD);
-            } else if (messageEvent.userRoles.contains(MixerUser.Role.GLOBAL_MOD)) {
-                username.setFill(Color.TEAL);
-            }
+            username.setFill(colorUsername(messageEvent.userRoles));
 
             /* Adds spaces between the elements and adds a colon after the username. */
             username.setText(String.format(" %s: ", username.getText()));
@@ -457,6 +426,66 @@ public class MixChat {
             }
         }
         return textList;
+    }
+
+    /**
+     * Formats a clearmessage event for the chat.
+     *
+     * @param data Data from the clear message event. Used for the username of the clearer.
+     * @return  Returns a list of formatted text objects.
+     */
+    private List<Node> formatAlert(ClearMessagesEvent data) {
+        List<Node> textList = new LinkedList<>();
+
+        /*
+         * Formats the current time to be added to textList.
+         */
+        SimpleDateFormat formatter = new SimpleDateFormat("HH:mm:ss");
+        Date date = new Date();
+        Text dateText = new Text(formatter.format(date));
+
+        Text username = new Text(String.format(" %s: ", data.data.clearer.username));
+        username.setFill(colorUsername(data.data.clearer.userRole));
+
+        Text message = new Text(" has cleared the chat.");
+        message.setFill(Color.RED);
+        message.setFont(Font.font("Verdana", FontPosture.ITALIC, 12));
+
+        textList.add(dateText);
+        textList.add(username);
+        textList.add(message);
+
+        return textList;
+    }
+
+    /**
+     * Returns a color based on the list of roles provided.
+     *
+     * @param roles List of user roles.
+     * @return  Color from the user roles.
+     */
+    private Color colorUsername(List<MixerUser.Role> roles) {
+        /*
+         * Colors the username based on the user role in chat.
+         */
+        // Add color to username by user role
+        if ((roles.contains(MixerUser.Role.MOD))) {
+            return Color.GREEN;
+        } else if (roles.contains(MixerUser.Role.PRO)) {
+            return Color.DEEPPINK;
+        } else if (roles.contains(MixerUser.Role.USER)) {
+            return Color.SKYBLUE;
+        } else if (roles.contains(MixerUser.Role.OWNER)) {
+            return Color.BLACK;
+        } else if (roles.contains(MixerUser.Role.FOUNDER)) {
+            return Color.RED;
+        } else if (roles.contains(MixerUser.Role.STAFF)) {
+            return Color.GOLD;
+        } else if (roles.contains(MixerUser.Role.GLOBAL_MOD)) {
+            return Color.TEAL;
+        } else {
+            return Color.BLACK;
+        }
     }
 
     /**
@@ -657,12 +686,23 @@ public class MixChat {
      */
     public void sendMessage(String message) {
         if (message.startsWith("/")) {
-            if ("/whisper".contains(message.split(" ")[0])) {
-                sendWhisper(message);
+            if (commands.isCommand(message.split(" ")[0])) {
+                if ("/whisper".contains(message.split(" ")[0])) {
+                    sendWhisper(message);
+                } else {
+                   commands.runCommand(message.split(" ")[0], chatConnectible);
+                }
             }
         }
         else
             chatConnectible.send(ChatSendMethod.of(message));
+    }
+
+    /**
+     * Send the clear messages command to mixer.
+     */
+    private void clearMessages() {
+        chatConnectible.send(ClearMessagesMethod.of());
     }
 
     /**
@@ -709,6 +749,8 @@ public class MixChat {
             MixerUser user = new MixerUser();
             user.username = messageComponents[1];
 
+            commands.runCommand("/whisper", chatConnectible, message);
+
             /*
              * Format message to show on the client.
              */
@@ -718,8 +760,8 @@ public class MixChat {
             Date date = new Date();
             Text dateText = new Text(formatter.format(date));
 
-            // Send the whisper.
-            chatConnectible.send(WhisperMethod.builder().send(rebuiltMessage).to(user).build());
+//            // Send the whisper.
+//            chatConnectible.send(WhisperMethod.builder().send(rebuiltMessage).to(user).build());
 
             Text toUsername = new Text(String.format("%s: ", messageComponents[1]));
             Text fromUsername = new Text(String.format(" %s", mixerUsername));
@@ -827,6 +869,9 @@ public class MixChat {
                 }
             }, 300000, 300000);
         });
+        chatConnectible.on(ClearMessagesEvent.class, cEvent-> {
+            updateText(formatAlert(cEvent));
+        });
 
         userListTimer.schedule(new TimerTask() {
             @Override
@@ -845,6 +890,11 @@ public class MixChat {
         });
     }
 
+    /**
+     * Pareses the live event to set the tab to live or not.
+     *
+     * @param event Event to parse.
+     */
     private void parseLiveEvent(LiveEvent event) {
         if (event.data.payload.has("online")) {
             if (event.data.payload.get("online").getAsBoolean()) {

@@ -12,6 +12,7 @@
 <?import javafx.scene.shape.Circle?>
 <?import javafx.scene.text.TextFlow?>
 
+<?import com.benjazzy.mixchat.controls.AutoCompleteTextField?>
 <VBox fx:id="Root" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" minHeight="-Infinity" minWidth="-Infinity" prefHeight="274.0" prefWidth="464.0" xmlns="http://javafx.com/javafx/8.0.171" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.benjazzy.mixchat.controller.ChatController">
    <children>
       <Pane minHeight="-Infinity" prefHeight="29.0" prefWidth="464.0">
@@ -63,7 +64,7 @@
             <AnchorPane maxHeight="-Infinity" maxWidth="1.7976931348623157E308" minHeight="-Infinity" minWidth="0.0" prefHeight="30.0" prefWidth="598.0">
                <children>
                   <Button fx:id="sendMessage" layoutY="1.0" mnemonicParsing="false" onAction="#SendMessage" text="Send" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" />
-                  <TextField fx:id="message" layoutX="50.0" layoutY="1.0" onKeyPressed="#handleMessageEnter" prefHeight="26.0" prefWidth="548.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="50.0" AnchorPane.rightAnchor="0.0" />
+                  <AutoCompleteTextField fx:id="message" layoutX="50.0" layoutY="1.0" onKeyPressed="#handleMessageEnter" prefHeight="26.0" prefWidth="548.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="50.0" AnchorPane.rightAnchor="0.0" />
                </children>
             </AnchorPane>
          </items>
