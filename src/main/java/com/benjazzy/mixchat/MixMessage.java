@@ -83,4 +83,7 @@ public class MixMessage extends Text {
     public String getUuid() {
         return this.uuid;
     }
+    public String getUser() {
+        return user;
+    }
 }

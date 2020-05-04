@@ -1,9 +1,12 @@
 package com.benjazzy.mixchat.commands;
 
 import com.mixer.api.resource.MixerUser;
+import com.mixer.api.resource.chat.AbstractChatReply;
 import com.mixer.api.resource.chat.events.ClearMessagesEvent;
 import com.mixer.api.resource.chat.methods.ClearMessagesMethod;
+import com.mixer.api.resource.chat.methods.PurgeMethod;
 import com.mixer.api.resource.chat.methods.WhisperMethod;
+import com.mixer.api.resource.chat.replies.ReplyHandler;
 import com.mixer.api.resource.chat.ws.MixerChatConnectable;
 import sun.awt.image.ImageWatched;
 
@@ -27,9 +30,15 @@ public class Commands {
             @Override
             public void run(MixerChatConnectable chatConnectable, String argument) {
                 if (argument != null) {
-                    {
-                        sendWhisper(argument, chatConnectable);
-                    }
+                    sendWhisper(argument, chatConnectable);
+                }
+            }
+        });
+        addCommand("/purge", new AbstractCommand() {
+            @Override
+            public void run(MixerChatConnectable chatConnectable, @Nullable String argument) {
+                if (argument != null) {
+                    sendPurge(argument, chatConnectable);
                 }
             }
         });
@@ -81,6 +90,22 @@ public class Commands {
             user.username = messageComponents[1];
 
             chatConnectable.send(WhisperMethod.builder().to(user).send(rebuiltMessage).build());
+        }
+    }
+
+    private void sendPurge(String message, MixerChatConnectable chatConnectable) {
+        String[] messageComponents = message.split(" ");
+        if (messageComponents.length != 2 || !messageComponents[1].startsWith("@")) {
+            System.out.println("Invalid purge.");
+        } else {
+            messageComponents[1] = messageComponents[1].substring(1);
+
+            chatConnectable.send((PurgeMethod.of(messageComponents[1])), new ReplyHandler<AbstractChatReply>() {
+                @Override
+                public void onSuccess(@Nullable AbstractChatReply abstractChatReply) {
+                    System.out.println();
+                }
+            });
         }
     }
 }

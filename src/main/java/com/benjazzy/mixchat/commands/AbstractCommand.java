@@ -7,7 +7,7 @@ import java.util.List;
 
 public abstract class AbstractCommand {
     public String name;
-    public List<String> arguments;
+    public List argument;
 
     public abstract void run(MixerChatConnectable chatConnectable, @Nullable String argument);
 }

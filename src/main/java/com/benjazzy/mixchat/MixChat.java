@@ -458,6 +458,43 @@ public class MixChat {
         return textList;
     }
 
+    private List<Node> formatAlert(PurgeMessageEvent data) {
+        List<Node> textList = new LinkedList<>();
+
+        /*
+         * Formats the current time to be added to textList.
+         */
+        SimpleDateFormat formatter = new SimpleDateFormat("HH:mm:ss");
+        Date date = new Date();
+        Text dateText = new Text(formatter.format(date));
+
+        Text username = new Text(String.format(" %s: ", data.data.moderator.username));
+        username.setFill(colorUsername(data.data.moderator.userRole));
+
+        Text message = new Text(" has purged messages from ");
+        message.setFill(Color.RED);
+        message.setFont(Font.font("Verdana", FontPosture.ITALIC, 12));
+
+        MixChatUser purgeUser = null;
+        for (MixChatUser user : users) {
+            if (user.getId() == data.data.userId) {
+                purgeUser = user;
+                break;
+            }
+        }
+
+        Text purged = new Text(purgeUser.getUserName());
+        purged.setFill(colorUsername(purgeUser.getRoleList()));
+        purged.setFont(Font.font("Verdana", FontPosture.ITALIC, 12));
+
+        textList.add(dateText);
+        textList.add(username);
+        textList.add(message);
+        textList.add(purged);
+
+        return textList;
+    }
+
     /**
      * Returns a color based on the list of roles provided.
      *
@@ -689,7 +726,11 @@ public class MixChat {
             if (commands.isCommand(message.split(" ")[0])) {
                 if ("/whisper".contains(message.split(" ")[0])) {
                     sendWhisper(message);
-                } else {
+                }
+                else if (message.split(" ").length > 1) {
+                    commands.runCommand(message.split(" ")[0], chatConnectible, message);
+                }
+                else {
                    commands.runCommand(message.split(" ")[0], chatConnectible);
                 }
             }
@@ -715,6 +756,30 @@ public class MixChat {
             if (messageNode instanceof MixMessage) {
                 MixMessage message = (MixMessage) messageNode;
                 if (message.getUuid().equals(event.data.id.toString())) {
+                    Platform.runLater(() -> message.setStrikethrough(true));
+                }
+            }
+        }
+    }
+
+    public void purgeUser(PurgeMessageEvent event) {
+        MixChatUser purgeUser = null;
+        for (MixChatUser user : users) {
+            if (user.getId() == event.data.userId) {
+                purgeUser = user;
+                break;
+            }
+        }
+
+        if (purgeUser == null) {
+            System.out.println("User not found");
+            return;
+        }
+
+        for (Node messageNode : chatBox.getChildren()) {
+            if (messageNode instanceof MixMessage) {
+                MixMessage message = (MixMessage) messageNode;
+                if (message.getUser().equals(purgeUser.getUserName())) {
                     Platform.runLater(() -> message.setStrikethrough(true));
                 }
             }
@@ -869,8 +934,12 @@ public class MixChat {
                 }
             }, 300000, 300000);
         });
-        chatConnectible.on(ClearMessagesEvent.class, cEvent-> {
+        chatConnectible.on(ClearMessagesEvent.class, cEvent -> {
             updateText(formatAlert(cEvent));
+        });
+        chatConnectible.on(PurgeMessageEvent.class, pEvent -> {
+            purgeUser(pEvent);
+            updateText(formatAlert(pEvent));
         });
 
         userListTimer.schedule(new TimerTask() {
