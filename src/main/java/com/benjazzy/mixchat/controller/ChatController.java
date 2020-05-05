@@ -1,6 +1,7 @@
 package com.benjazzy.mixchat.controller;
 
 import com.benjazzy.mixchat.MixChat;
+import com.benjazzy.mixchat.controls.AutoCompleteTextField;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
@@ -29,7 +30,7 @@ public class ChatController {
     @FXML
     private MenuItem connectMenu;           /** Menu item that contains the connect and disconnect items. */
     @FXML
-    private TextField message;              /** TextField containing the message the user wants to send. */
+    private AutoCompleteTextField message;              /** TextField containing the message the user wants to send. */
     @FXML
     private Button sendMessage;             /** Button to send message. */
     @FXML
@@ -64,6 +65,8 @@ public class ChatController {
         try {
             mixChat = new MixChat(this, ChatBox, UserList, ChatScrollPane);
             mixChat.connect(channelName, token);
+            message.setMixChat(mixChat);
+
         } catch (InterruptedException | ExecutionException e) {
             e.printStackTrace();
         }

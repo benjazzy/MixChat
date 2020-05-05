@@ -15,6 +15,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class Commands {
     ArrayList<AbstractCommand> commands = new ArrayList<>();
@@ -67,7 +68,19 @@ public class Commands {
     }
 
     public List<String> getCommands() {
-        return new LinkedList<>();
+        return commands.stream().map((AbstractCommand o) -> o.name).collect(Collectors.toList());
+    }
+
+    public List<String> getCommands(String name) {
+        return getCommands().stream().filter(o -> o.contains(name)).collect(Collectors.toList());
+    }
+
+    public String get(String name) {
+        if (isCommand(name)) {
+            AbstractCommand command = commands.stream().filter(o -> o.name.contains(name)).findFirst().orElse(null);
+            return command.name;
+        }
+        return "";
     }
 
     private void sendWhisper(String message, MixerChatConnectable chatConnectable) {

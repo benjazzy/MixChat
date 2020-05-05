@@ -447,7 +447,7 @@ public class MixChat {
         Text username = new Text(String.format(" %s: ", data.data.clearer.username));
         username.setFill(colorUsername(data.data.clearer.userRole));
 
-        Text message = new Text(" has cleared the chat.");
+        Text message = new Text("has cleared the chat.");
         message.setFill(Color.RED);
         message.setFont(Font.font("Verdana", FontPosture.ITALIC, 12));
 
@@ -471,7 +471,7 @@ public class MixChat {
         Text username = new Text(String.format(" %s: ", data.data.moderator.username));
         username.setFill(colorUsername(data.data.moderator.userRole));
 
-        Text message = new Text(" has purged messages from ");
+        Text message = new Text("has purged messages from ");
         message.setFill(Color.RED);
         message.setFont(Font.font("Verdana", FontPosture.ITALIC, 12));
 
@@ -1486,6 +1486,10 @@ public class MixChat {
                 }
             }
         }
+    }
+
+    public List<MixChatUser> getUsers() {
+        return users;
     }
     //endregion
 
