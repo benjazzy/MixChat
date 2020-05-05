@@ -16,17 +16,19 @@ import java.util.stream.Collectors;
  */
 public class AutoCompleteTextField extends TextField
 {
-    /** The existing autocomplete entries. */
+    /** The existing commands autocomplete entries. */
     private final SortedSet<String> commandEntries;
-    /** The popup used to select an entry. */
+    /** The popup used to select a command entry. */
     private ContextMenu commandsPopup;
-//    private int entriesIndex = 0;
-
+    /** The existing username autocomplete entries. */
     private final SortedSet<String> usernameEntries;
+    /** The popup used to select a username entry. */
     private ContextMenu usernamesPopup;
 
+    /** Commands object that stores a list the commands */
     private Commands commands = new Commands();
 
+    /** MixChat object used to get a list of users */
     private MixChat chat;
 
     /** Construct a new AutoCompleteTextField. */
