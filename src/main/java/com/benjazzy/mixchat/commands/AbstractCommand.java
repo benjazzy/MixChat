@@ -9,5 +9,5 @@ public abstract class AbstractCommand {
     public String name;
     public List argument;
 
-    public abstract void run(MixerChatConnectable chatConnectable, @Nullable String argument);
+    public abstract void run(MixerChatConnectable chatConnectable, String argument);
 }

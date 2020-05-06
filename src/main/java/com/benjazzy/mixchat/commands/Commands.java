@@ -2,18 +2,13 @@ package com.benjazzy.mixchat.commands;
 
 import com.mixer.api.resource.MixerUser;
 import com.mixer.api.resource.chat.AbstractChatReply;
-import com.mixer.api.resource.chat.events.ClearMessagesEvent;
-import com.mixer.api.resource.chat.methods.ClearMessagesMethod;
-import com.mixer.api.resource.chat.methods.PurgeMethod;
-import com.mixer.api.resource.chat.methods.WhisperMethod;
-import com.mixer.api.resource.chat.replies.ReplyHandler;
+import com.mixer.api.resource.chat.methods.*;
+import com.mixer.api.resource.chat.replies.*;
 import com.mixer.api.resource.chat.ws.MixerChatConnectable;
-import sun.awt.image.ImageWatched;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -30,17 +25,37 @@ public class Commands {
         addCommand("/whisper", new AbstractCommand() {
             @Override
             public void run(MixerChatConnectable chatConnectable, String argument) {
-                if (argument != null) {
-                    sendWhisper(argument, chatConnectable);
-                }
+                sendWhisper(argument, chatConnectable);
             }
         });
         addCommand("/purge", new AbstractCommand() {
             @Override
-            public void run(MixerChatConnectable chatConnectable, @Nullable String argument) {
-                if (argument != null) {
-                    sendPurge(argument, chatConnectable);
-                }
+            public void run(MixerChatConnectable chatConnectable, String argument) {
+                sendPurge(argument, chatConnectable);
+            }
+        });
+        addCommand("/timeout", new AbstractCommand() {
+            @Override
+            public void run(MixerChatConnectable chatConnectable, String argument) {
+                sendTimeout(argument, chatConnectable);
+            }
+        });
+        addCommand("/poll", new AbstractCommand() {
+            @Override
+            public void run(MixerChatConnectable chatConnectable, String argument) {
+                sendPollStart(argument, chatConnectable);
+            }
+        });
+        addCommand("/vote", new AbstractCommand() {
+            @Override
+            public void run(MixerChatConnectable chatConnectable, String argument) {
+                sendPollVote(argument, chatConnectable);
+            }
+        });
+        addCommand("/giveaway", new AbstractCommand() {
+            @Override
+            public void run(MixerChatConnectable chatConnectable, String argument) {
+                chatConnectable.send(GiveawayStartMethod.of());
             }
         });
     }
@@ -49,7 +64,7 @@ public class Commands {
         return commands.stream().filter(o -> o.name.contains(name)).findFirst().isPresent();
     }
 
-    public void runCommand(String name, MixerChatConnectable connectable, @Nullable String argument) {
+    public void runCommand(String name, MixerChatConnectable connectable, String argument) {
         if (isCommand(name)) {
             AbstractCommand command = commands.stream().filter(o -> o.name.contains(name)).findFirst().orElse(null);
             if (command != null) {
@@ -113,12 +128,38 @@ public class Commands {
         } else {
             messageComponents[1] = messageComponents[1].substring(1);
 
-            chatConnectable.send((PurgeMethod.of(messageComponents[1])), new ReplyHandler<AbstractChatReply>() {
-                @Override
-                public void onSuccess(@Nullable AbstractChatReply abstractChatReply) {
-                    System.out.println();
-                }
-            });
+            chatConnectable.send(PurgeMethod.of(messageComponents[1]));
+        }
+    }
+
+    private void sendTimeout(String message, MixerChatConnectable chatConnectable) {
+        String[] messageComponents = message.split(" ");
+        if (messageComponents.length != 3 || !messageComponents[1].startsWith("@")) {
+            System.out.println("Invalid timeout.");
+        } else {
+            messageComponents[1] = messageComponents[1].substring(1);
+            MixerUser user = new MixerUser();
+            user.username = messageComponents[1];
+
+            chatConnectable.send(TimeoutMethod.builder().to(user).time(messageComponents[2]).build());
+        }
+    }
+
+    private void sendPollStart(String message, MixerChatConnectable chatConnectable) {
+        String[] messageComponents = message.split(" ");
+        if (messageComponents.length < 5) {
+            System.out.println("Invalid poll.");
+        } else {
+            chatConnectable.send(VoteStartMethod.from(messageComponents[1], Arrays.copyOfRange(messageComponents, 3, messageComponents.length), Integer.parseInt(messageComponents[2])));
+        }
+    }
+
+    private void sendPollVote(String message, MixerChatConnectable chatConnectable) {
+        String[] messageComponents = message.split(" ");
+        if (messageComponents.length != 2) {
+            System.out.println("Invalid vote.");
+        } else {
+            chatConnectable.send(CastVoteMessage.of(Integer.parseInt(messageComponents[1])));
         }
     }
 }

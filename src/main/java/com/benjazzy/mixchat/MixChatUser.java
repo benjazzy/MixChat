@@ -84,4 +84,7 @@ public class MixChatUser {
     public int getId() {return this.id;}
     public String getUserName() {return this.userName;}
     public List<MixerUser.Role> getRoleList() {return this.roleList;}
+    public void setRoleList(List<MixerUser.Role> roleList) {
+        this.roleList = roleList;
+    }
 }

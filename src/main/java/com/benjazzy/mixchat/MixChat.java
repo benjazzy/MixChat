@@ -5,6 +5,7 @@ import com.benjazzy.mixchat.controller.ChatController;
 import com.benjazzy.mixchat.helper.ConsoleColors;
 import com.benjazzy.mixchat.oauth.MixOauth;
 import com.mixer.api.MixerAPI;
+import com.mixer.api.futures.checkers.Channels;
 import com.mixer.api.resource.MixerUser;
 import com.mixer.api.resource.channel.MixerChannel;
 import com.mixer.api.resource.chat.MixerChat;
@@ -193,27 +194,12 @@ public class MixChat {
         mixer = new MixerAPI("3721d6b1332a6db44a22ab5b71ae8e34ae187ee995b38f1a", token);
         int id = 0;                         /* Stores the chat id. */
 
-        // TODO replace with mixer.use().findOneByToken(chatName).get();
-        /*
-         * Resolves the channel name into chatId.
-         */
-        String result = "";
-        try {
-            result = getHTML(String.format("https://mixer.com/api/v1/channels/%s?fields=id", chatName));
-            JSONObject obj = new JSONObject(result);
-            id = obj.getInt("id");
-            chatId = id;
-            //System.out.println(id);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-
         /*
          * Set the user, chat, and channel objects from channelName.
          */
         MixerUser user = mixer.use(UsersService.class).getCurrent().get();
-        MixerChat chat = mixer.use(ChatService.class).findOne(id).get();
         MixerChannel channel = mixer.use(ChannelsService.class).findOneByToken(chatName).get();
+        MixerChat chat = mixer.use(ChatService.class).findOne(channel.id).get();
 
         mixerUsername = user.username;
         userId = user.id;
@@ -727,11 +713,8 @@ public class MixChat {
                 if ("/whisper".contains(message.split(" ")[0])) {
                     sendWhisper(message);
                 }
-                else if (message.split(" ").length > 1) {
-                    commands.runCommand(message.split(" ")[0], chatConnectible, message);
-                }
                 else {
-                   commands.runCommand(message.split(" ")[0], chatConnectible);
+                    commands.runCommand(message.split(" ")[0], chatConnectible, message);
                 }
             }
         }
@@ -936,6 +919,12 @@ public class MixChat {
         });
         chatConnectible.on(ClearMessagesEvent.class, cEvent -> {
             updateText(formatAlert(cEvent));
+        });
+        chatConnectible.on(UserTimeoutEvent.class, tEvent -> {
+            System.out.println("TIMEOUT!");
+        });
+        chatConnectible.on(UserUpdateEvent.class, uEvent -> {
+            updateUser(uEvent);
         });
         chatConnectible.on(PurgeMessageEvent.class, pEvent -> {
             purgeUser(pEvent);
@@ -1485,6 +1474,16 @@ public class MixChat {
                     }
                 }
             }
+        }
+    }
+
+    private void updateUser(UserUpdateEvent event) {
+        MixChatUser user = users.stream().filter(o -> o.getId() == event.data.userId).findFirst().orElse(null);
+
+        if (user != null) {
+            delUser(user.getId(), false);
+            user.setRoleList(event.data.roles);
+            addUser(user, false, true);
         }
     }
 
