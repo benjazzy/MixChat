@@ -30,7 +30,7 @@ public class MixOauth {
 	private static FileDataStoreFactory DATA_STORE_FACTORY;
 
 	/** OAuth 2 scope. */
-	private static final String SCOPE = "user:act_as chat:chat chat:bypass_slowchat chat:connect chat:remove_message chat:purge chat:timeout chat:poll_vote chat:poll_start chat:clear_messages chat:giveaway_start";
+	private static final String SCOPE = "chat:chat chat:bypass_slowchat chat:connect chat:remove_message chat:purge chat:timeout chat:poll_vote chat:poll_start chat:clear_messages chat:giveaway_start channel:follow:self";
 
 	/** Global instance of the HTTP transport. */
 	private static final HttpTransport HTTP_TRANSPORT = new NetHttpTransport();

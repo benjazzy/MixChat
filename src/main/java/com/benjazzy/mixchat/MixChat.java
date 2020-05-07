@@ -192,7 +192,6 @@ public class MixChat {
 
         /* Authenticates with Mixer using the Oauth2 token. */
         mixer = new MixerAPI("3721d6b1332a6db44a22ab5b71ae8e34ae187ee995b38f1a", token);
-        int id = 0;                         /* Stores the chat id. */
 
         /*
          * Set the user, chat, and channel objects from channelName.
@@ -202,6 +201,7 @@ public class MixChat {
         MixerChat chat = mixer.use(ChatService.class).findOne(channel.id).get();
 
         mixerUsername = user.username;
+        chatId = channel.id;
         userId = user.id;
 
 
@@ -714,7 +714,7 @@ public class MixChat {
                     sendWhisper(message);
                 }
                 else {
-                    commands.runCommand(message.split(" ")[0], chatConnectible, message);
+                    commands.runCommand(message.split(" ")[0], message, chatConnectible, mixer);
                 }
             }
         }
@@ -797,7 +797,7 @@ public class MixChat {
             MixerUser user = new MixerUser();
             user.username = messageComponents[1];
 
-            commands.runCommand("/whisper", chatConnectible, message);
+            commands.runCommand("/whisper", message, chatConnectible, mixer);
 
             /*
              * Format message to show on the client.

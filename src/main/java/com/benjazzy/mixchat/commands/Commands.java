@@ -1,15 +1,22 @@
 package com.benjazzy.mixchat.commands;
 
+import com.mixer.api.MixerAPI;
 import com.mixer.api.resource.MixerUser;
+import com.mixer.api.resource.channel.MixerChannel;
 import com.mixer.api.resource.chat.AbstractChatReply;
+import com.mixer.api.resource.chat.MixerChat;
 import com.mixer.api.resource.chat.methods.*;
 import com.mixer.api.resource.chat.replies.*;
 import com.mixer.api.resource.chat.ws.MixerChatConnectable;
+import com.mixer.api.services.impl.ChannelsService;
+import com.mixer.api.services.impl.ChatService;
+import com.mixer.api.services.impl.UsersService;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 
 public class Commands {
@@ -18,44 +25,56 @@ public class Commands {
     public Commands() {
         addCommand("/clear", new AbstractCommand() {
             @Override
-            public void run(MixerChatConnectable chatConnectable, String argument) {
+            public void run(String argument, MixerChatConnectable chatConnectable, MixerAPI mixerAPI) {
                 chatConnectable.send(ClearMessagesMethod.of());
             }
         });
         addCommand("/whisper", new AbstractCommand() {
             @Override
-            public void run(MixerChatConnectable chatConnectable, String argument) {
+            public void run(String argument, MixerChatConnectable chatConnectable, MixerAPI mixerAPI) {
                 sendWhisper(argument, chatConnectable);
             }
         });
         addCommand("/purge", new AbstractCommand() {
             @Override
-            public void run(MixerChatConnectable chatConnectable, String argument) {
+            public void run(String argument, MixerChatConnectable chatConnectable, MixerAPI mixerAPI) {
                 sendPurge(argument, chatConnectable);
             }
         });
         addCommand("/timeout", new AbstractCommand() {
             @Override
-            public void run(MixerChatConnectable chatConnectable, String argument) {
+            public void run(String argument, MixerChatConnectable chatConnectable, MixerAPI mixerAPI) {
                 sendTimeout(argument, chatConnectable);
             }
         });
         addCommand("/poll", new AbstractCommand() {
             @Override
-            public void run(MixerChatConnectable chatConnectable, String argument) {
+            public void run(String argument, MixerChatConnectable chatConnectable, MixerAPI mixerAPI) {
                 sendPollStart(argument, chatConnectable);
             }
         });
         addCommand("/vote", new AbstractCommand() {
             @Override
-            public void run(MixerChatConnectable chatConnectable, String argument) {
+            public void run(String argument, MixerChatConnectable chatConnectable, MixerAPI mixerAPI) {
                 sendPollVote(argument, chatConnectable);
             }
         });
         addCommand("/giveaway", new AbstractCommand() {
             @Override
-            public void run(MixerChatConnectable chatConnectable, String argument) {
+            public void run(String argument, MixerChatConnectable chatConnectable, MixerAPI mixerAPI) {
                 chatConnectable.send(GiveawayStartMethod.of());
+            }
+        });
+        addCommand("/follow", new AbstractCommand() {
+            @Override
+            public void run(String argument, MixerChatConnectable chatConnectable, MixerAPI mixerAPI) {
+                sendFollow(argument, mixerAPI);
+            }
+        });
+        addCommand("/unfollow", new AbstractCommand() {
+            @Override
+            public void run(String argument, MixerChatConnectable chatConnectable, MixerAPI mixerAPI) {
+                sendUnfollow(argument, mixerAPI);
             }
         });
     }
@@ -64,17 +83,13 @@ public class Commands {
         return commands.stream().filter(o -> o.name.contains(name)).findFirst().isPresent();
     }
 
-    public void runCommand(String name, MixerChatConnectable connectable, String argument) {
+    public void runCommand(String name, String argument, MixerChatConnectable connectable, MixerAPI api) {
         if (isCommand(name)) {
             AbstractCommand command = commands.stream().filter(o -> o.name.contains(name)).findFirst().orElse(null);
             if (command != null) {
-                command.run(connectable, argument);
+                command.run(argument, connectable, api);
             }
         }
-    }
-
-    public void runCommand(String name, MixerChatConnectable connectable) {
-        runCommand(name, connectable, null);
     }
 
     public void addCommand(String name, AbstractCommand command) {
@@ -160,6 +175,42 @@ public class Commands {
             System.out.println("Invalid vote.");
         } else {
             chatConnectable.send(CastVoteMessage.of(Integer.parseInt(messageComponents[1])));
+        }
+    }
+
+    private void sendFollow(String message, MixerAPI mixerAPI) {
+        String[] messageComponents = message.split(" ");
+        if (messageComponents.length != 2) {
+            System.out.println("Invalid follow");
+        } else
+        {
+            try {
+                MixerUser user = mixerAPI.use(UsersService.class).getCurrent().get();
+                MixerChannel channel = mixerAPI.use(ChannelsService.class).findOneByToken(messageComponents[1].substring(1)).get();
+                mixerAPI.use(ChannelsService.class).follow(channel, user);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            } catch (ExecutionException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    private void sendUnfollow(String message, MixerAPI mixerAPI) {
+        String[] messageComponents = message.split(" ");
+        if (messageComponents.length != 2) {
+            System.out.println("Invalid unFollow");
+        } else
+        {
+            try {
+                MixerUser user = mixerAPI.use(UsersService.class).getCurrent().get();
+                MixerChannel channel = mixerAPI.use(ChannelsService.class).findOneByToken(messageComponents[1].substring(1)).get();
+                mixerAPI.use(ChannelsService.class).unfollow(channel, user);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            } catch (ExecutionException e) {
+                e.printStackTrace();
+            }
         }
     }
 }
